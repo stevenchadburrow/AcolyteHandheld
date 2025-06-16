@@ -1,0 +1,500 @@
+/**
+ * MIT License
+ * Copyright (c) 2018-2023 Mahyar Koshkouei
+ *
+ * An example of using the peanut_gb.h library. This example application uses
+ * SDL2 to draw the screen and get input.
+ */
+
+#include <stdint.h>
+#include <stdlib.h>
+
+#include "minigb_apu.h"
+#include "minigb_apu.c"
+
+#include "peanut_gb.h"
+
+
+struct priv_t
+{
+	uint8_t dummy;
+};
+
+
+volatile uint8_t __attribute__((address(0x80078000))) cart_ram[32768];
+uint8_t __attribute__((coherent)) boot_rom[256];
+uint8_t selected_palette_vga[3][4];
+uint16_t selected_palette_lcd[3][4];
+
+uint8_t frame_counter = 0;
+
+unsigned char reset_check = 0;
+unsigned char palette_num = 0;
+
+// Returns a byte from the ROM file at the given address.
+uint8_t gb_rom_read(struct gb_s *gb, const uint_fast32_t addr)
+{
+	return cart_rom[addr];
+}
+
+// Returns a byte from the cartridge RAM at the given address.
+uint8_t gb_cart_ram_read(struct gb_s *gb, const uint_fast32_t addr)
+{
+	return cart_ram[addr];
+}
+
+// Writes a given byte to the cartridge RAM at the given address.
+void gb_cart_ram_write(struct gb_s *gb, const uint_fast32_t addr,
+		       const uint8_t val)
+{
+	cart_ram[addr] = val;
+}
+
+uint8_t gb_boot_rom_read(struct gb_s *gb, const uint_fast16_t addr)
+{
+	return boot_rom[addr];
+}
+
+unsigned char gb_write_cart_ram_file(char filename[16])
+{	
+	// Global variables
+	FIL file; // File handle for the file we open
+	DIR dir; // Directory information for the current directory
+	FATFS fso; // File System Object for the file system we are reading from
+	
+	//SendString("Initializing disk\n\r\\");
+	
+	// Wait for the disk to initialise
+    while(disk_initialize(0));
+    // Mount the disk
+    f_mount(&fso, "", 0);
+    // Change dir to the root directory
+    f_chdir("/");
+    // Open the directory
+    f_opendir(&dir, ".");
+ 
+	unsigned char buffer[1];
+	unsigned int bytes;
+	unsigned int result;
+	unsigned char flag;
+	
+	result = f_open(&file, filename, FA_CREATE_ALWAYS | FA_WRITE);
+	if (result == 0)
+	{		
+		for (unsigned int i=0; i<32768; i++)
+		{
+			buffer[0] = cart_ram[i];
+			
+			while (f_write(&file, buffer, 1, &bytes) != 0) { }
+		}
+		
+		while (f_sync(&file) != 0) { }
+		while (f_close(&file) != 0) { }
+		
+		//SendString("Wrote all memory to file\n\r\\");
+		
+		flag = 1;
+	}
+	else
+	{
+		//SendString("Could not write all memory to file\n\r\\");
+		
+		flag = 0;
+	}	
+	
+	return flag;
+}
+
+unsigned char gb_read_cart_ram_file(char filename[16])
+{	
+	// Global variables
+	FIL file; // File handle for the file we open
+	DIR dir; // Directory information for the current directory
+	FATFS fso; // File System Object for the file system we are reading from
+	
+	//SendString("Initializing disk\n\r\\");
+	
+	// Wait for the disk to initialise
+    while(disk_initialize(0));
+    // Mount the disk
+    f_mount(&fso, "", 0);
+    // Change dir to the root directory
+    f_chdir("/");
+    // Open the directory
+    f_opendir(&dir, ".");
+ 
+	unsigned char buffer[1];
+	unsigned int bytes;
+	unsigned int result;
+	unsigned char flag;
+	
+	result = f_open(&file, filename, FA_READ);
+	if (result == 0)
+	{		
+		for (unsigned int i=0; i<32768; i++)
+		{
+			while (f_read(&file, &buffer[0], 1, &bytes) != 0) { } // MUST READ ONE BYTE AT A TIME!!!
+			
+			cart_ram[i] = buffer[0];
+		}
+		
+		while (f_sync(&file) != 0) { }
+		while (f_close(&file) != 0) { }
+		
+		//SendString("Read all memory from file\n\r\\");
+		
+		flag = 1;
+	}
+	else
+	{		
+		//SendString("Could not read all memory from file\n\r\\");
+		
+		flag = 0;
+		
+		nes_error(0x00);
+	}	
+	
+	return flag;
+}
+
+/**
+ * Handles an error reported by the emulator. The emulator context may be used
+ * to better understand why the error given in gb_err was reported.
+ */
+void gb_error(struct gb_s *gb, const enum gb_error_e gb_err, const uint16_t addr)
+{
+	const char* gb_err_str[GB_INVALID_MAX] = {
+		"UNKNOWN\\",
+		"INVALID OPCODE\\",
+		"INVALID READ\\",
+		"INVALID WRITE\\",
+		"HALT FOREVER\\",
+		"INVALID_SIZE\\"
+	};
+	
+	uint8_t instr_byte;
+
+	instr_byte = __gb_read(gb, addr);
+	
+	unsigned long long_addr = addr;
+
+	if(addr >= 0x4000 && addr < 0x8000)
+	{
+		long_addr = (uint32_t)addr * (uint32_t)gb->selected_rom_bank;
+	}
+
+	SendString("Error \\");
+	SendString((char *)gb_err_str[gb_err]);
+	SendChar(' ');
+	SendLongHex(long_addr);
+	SendChar(' ');
+	SendHex(instr_byte);
+	SendString("\r\n\\");
+
+	while (1) { }
+}
+
+/**
+ * Automatically assigns a colour palette to the game using a given game
+ * checksum.
+ * TODO: Not all checksums are programmed in yet because I'm lazy.
+ */
+const unsigned char preset_palette_single[16][12] = {
+	{0xFF,0x92,0x49,0x00,0xFF,0x92,0x49,0x00,0xFF,0x92,0x49,0x00}, // greyscale
+	{0x70,0x4D,0x29,0x28,0x70,0x4D,0x29,0x28,0x70,0x4D,0x29,0x28}, // gb original
+	{0xDA,0x91,0x48,0x00,0xDA,0x91,0x48,0x00,0xDA,0x91,0x48,0x00}, // gb pocket
+	{0x16,0x11,0x0D,0x08,0x16,0x11,0x0D,0x08,0x16,0x11,0x0D,0x08}, // gb light
+	{0xFF,0x5C,0xE8,0x00,0xFF,0x5C,0xE8,0x00,0xFF,0x5C,0xE8,0x00},
+	{0xFF,0xFC,0xE0,0x00,0xFF,0xFC,0xE0,0x00,0xFF,0xFC,0xE0,0x00},
+	{0xFF,0xF5,0x84,0x00,0xFF,0xF5,0x84,0x00,0xFF,0xF5,0x84,0x00},
+	{0x00,0x12,0xF8,0xFF,0x00,0x12,0xF8,0xFF,0x00,0x12,0xF8,0xFF},
+	{0xFF,0xB6,0x49,0x00,0xFF,0xB6,0x49,0x00,0xFF,0xB6,0x49,0x00},
+	{0xFE,0xF2,0x93,0x00,0xFE,0xF2,0x93,0x00,0xFE,0xF2,0x93,0x00},
+	{0xFF,0xF5,0x84,0x00,0xFF,0xF5,0x84,0x00,0xFF,0xD2,0x8C,0x44},
+	{0xFF,0xF2,0x84,0x00,0xFF,0xF2,0x84,0x00,0xFF,0x7C,0x0F,0x00},
+	{0xFF,0xF2,0x84,0x00,0xFF,0xF5,0x84,0x00,0xFF,0x93,0x4A,0x00},
+	{0xFF,0x7C,0x10,0x00,0xFF,0x77,0x03,0x00,0xFF,0xF2,0x84,0x00},
+	{0xFF,0xF2,0x84,0x00,0xFF,0x7C,0x10,0x00,0xFF,0x77,0x03,0x00},
+	{0xFF,0x77,0x03,0x00,0xFF,0x7C,0x10,0x00,0xFF,0xFC,0x68,0x00}
+};
+
+const unsigned short preset_palette_double[16][12] = {
+	{0xC71C,0x8410,0x4208,0x0000,0xC71C,0x8410,0x4208,0x0000,0xC71C,0x8410,0x4208,0x0000}, // greyscale
+	{0x040C,0x4308,0x4204,0x0204,0x040C,0x4308,0x4204,0x0204,0x040C,0x4308,0x4204,0x0204}, // gb original
+	{0x8618,0x4410,0x0208,0x0000,0x8618,0x4410,0x0208,0x0000,0x8618,0x4410,0x0208,0x0000}, // gb pocket
+	{0x8500,0x4400,0x4300,0x0200,0x8500,0x4400,0x4300,0x0200,0x8500,0x4400,0x4300,0x0200}, // gb light
+	{0xC71C,0x0708,0x021C,0x0000,0xC71C,0x0708,0x021C,0x0000,0xC71C,0x0708,0x021C,0x0000},
+	{0xC71C,0x071C,0x001C,0x0000,0xC71C,0x071C,0x001C,0x0000,0xC71C,0x071C,0x001C,0x0000},
+	{0xC71C,0x451C,0x0110,0x0000,0xC71C,0x451C,0x0110,0x0000,0xC71C,0x451C,0x0110,0x0000},
+	{0x0000,0x8400,0x061C,0xC71C,0x0000,0x8400,0x061C,0xC71C,0x0000,0x8400,0x061C,0xC71C},
+	{0xC71C,0x8514,0x4208,0x0000,0xC71C,0x8514,0x4208,0x0000,0xC71C,0x8514,0x4208,0x0000},
+	{0x871C,0x841C,0xC410,0x0000,0x871C,0x841C,0xC410,0x0000,0x871C,0x841C,0xC410,0x0000},
+	{0xC71C,0x451C,0x0110,0x0000,0xC71C,0x451C,0x0110,0x0000,0xC71C,0x8418,0x0310,0x0108},
+	{0xC71C,0x841C,0x0110,0x0000,0xC71C,0x841C,0x0110,0x0000,0xC71C,0x070C,0xC300,0x0000},
+	{0xC71C,0x841C,0x0110,0x0000,0xC71C,0x451C,0x0110,0x0000,0xC71C,0xC410,0x8208,0x0000},
+	{0xC71C,0x070C,0x0400,0x0000,0xC71C,0xC50C,0xC000,0x0000,0xC71C,0x841C,0x0110,0x0000},
+	{0xC71C,0x841C,0x0110,0x0000,0xC71C,0x070C,0x0400,0x0000,0xC71C,0xC50C,0xC000,0x0000},
+	{0xC71C,0xC50C,0xC000,0x0000,0xC71C,0x070C,0x0400,0x0000,0xC71C,0x071C,0x020C,0x0000}
+};
+
+void auto_assign_palette(uint8_t game_checksum, unsigned char val)
+{
+	for (int i=0; i<3; i++)
+	{
+		for (int j=0; j<4; j++)
+		{
+			selected_palette_vga[i][j] = preset_palette_single[val][i*4+j];
+		}
+	}
+	
+	for (int i=0; i<3; i++)
+	{
+		for (int j=0; j<4; j++)
+		{
+			selected_palette_lcd[i][j] = preset_palette_double[val][i*4+j];
+		}
+	}
+}
+
+
+#if ENABLE_LCD
+/**
+ * Draws scanline into framebuffer.
+ */
+void lcd_draw_line(struct gb_s *gb, const uint8_t pixels[160],
+		   const uint_fast8_t line)
+{
+	if (frame_counter == 1) // only every other frame
+	{
+		if (screen_handheld == 0)
+		{
+			for(unsigned int x = 0; x < LCD_WIDTH; x++)
+			{
+				screen_pixel_vga_raw(x+48, line+48, selected_palette_vga[(pixels[(x)] & LCD_PALETTE_ALL) >> 4][pixels[(x)] & 3]);
+			}
+		}
+		else
+		{
+			for(unsigned int x = 0; x < LCD_WIDTH; x++)
+			{
+				screen_pixel_lcd_raw(x+48, line+48, selected_palette_lcd[(pixels[(x)] & LCD_PALETTE_ALL) >> 4][pixels[(x)] & 3]);
+			}
+		}
+	}
+}
+#endif
+
+int PeanutGB()
+{
+	screen_clear();
+	audio_clear();
+	
+	struct gb_s gb;
+	struct priv_t priv;
+
+	enum gb_init_error_e gb_ret;
+	int ret = EXIT_SUCCESS;
+	
+	/* TODO: Sanity check input GB file. */
+
+	/* Initialise emulator context. */
+	gb_ret = gb_init(&gb, &gb_rom_read, &gb_cart_ram_read, &gb_cart_ram_write,
+			 &gb_error, &priv);
+
+	switch(gb_ret)
+	{
+	case GB_INIT_NO_ERROR:
+		break;
+
+	case GB_INIT_CARTRIDGE_UNSUPPORTED:
+		SendString("Unsupported cartridge.\r\n\\");
+		ret = EXIT_FAILURE;
+		while (1) { }
+
+	case GB_INIT_INVALID_CHECKSUM:
+		SendString("Invalid ROM: Checksum failure.\r\n\\");
+		ret = EXIT_FAILURE;
+		while (1) { }
+
+	default:
+		SendString("Unknown error \\");
+		SendHex(gb_ret);
+		SendString("\r\n\\");
+		ret = EXIT_FAILURE;
+		while (1) { }
+	}
+	
+	// Global variables
+	FIL file; // File handle for the file we open
+	DIR dir; // Directory information for the current directory
+	FATFS fso; // File System Object for the file system we are reading from
+	//FILINFO fno;
+
+	// Wait for the disk to initialise
+	while(disk_initialize(0));
+	// Mount the disk
+	f_mount(&fso, "", 0);
+	// Change dir to the root directory
+	f_chdir("/");
+	// Open the directory
+	f_opendir(&dir, ".");
+	
+	unsigned int bytes;
+	unsigned char buffer[1];
+	unsigned int result;
+	
+	unsigned char choice = 0;
+	unsigned char ps2_found = 0;
+
+	result = f_open(&file, "/DMG-BOOT.BIN", FA_READ);
+	if (result == 0)
+	{	
+		for (unsigned int i=0; i<256; i++)
+		{
+			while (f_read(&file, &buffer, 1, &bytes) != 0) { }
+
+			boot_rom[i] = buffer[0];
+		}
+		
+		while (f_sync(&file) != 0) { }
+		while (f_close(&file) != 0) { }
+
+		gb_set_boot_rom(&gb, gb_boot_rom_read);
+		gb_reset(&gb);
+	}
+	else
+	{
+		SendString("Could not find DMG-BOOT.BIN file\n\r\\");
+	}
+
+	/* Set the RTC of the game cartridge. Only used by games that support it. */
+	{
+		time_t rawtime;
+		time(&rawtime);
+#ifdef _POSIX_C_SOURCE
+		struct tm timeinfo;
+		localtime_r(&rawtime, &timeinfo);
+#else
+		struct tm *timeinfo;
+		timeinfo = localtime(&rawtime);
+#endif
+
+		/* You could potentially force the game to allow the player to
+		 * reset the time by setting the RTC to invalid values.
+		 *
+		 * Using memset(&gb->cart_rtc, 0xFF, sizeof(gb->cart_rtc)) for
+		 * example causes Pokemon Gold/Silver to say "TIME NOT SET",
+		 * allowing the player to set the time without having some dumb
+		 * password.
+		 *
+		 * The memset has to be done directly to gb->cart_rtc because
+		 * gb_set_rtc() processes the input values, which may cause
+		 * games to not detect invalid values.
+		 */
+
+		/* Set RTC. Only games that specify support for RTC will use
+		 * these values. */
+#ifdef _POSIX_C_SOURCE
+		gb_set_rtc(&gb, &timeinfo);
+#else
+		gb_set_rtc(&gb, timeinfo);
+#endif
+	}
+
+#if ENABLE_LCD
+	gb_init_lcd(&gb, &lcd_draw_line);
+#endif
+
+	auto_assign_palette(gb_colour_hash(&gb), palette_num); // default
+	
+	frame_counter = 0;
+	
+#if ENABLE_SOUND
+	T8CON = 0x0000; // reset
+	T8CON = 0x0000; // prescale of 1:1, 16-bit
+	TMR8 = 0x0000; // zero out counter
+	PR8 = 0x207F; // approx twice per scanline (minus one)
+	T8CONbits.ON = 1;
+#endif
+	
+	while (1)
+	{
+		if (reset_check > 0)
+		{
+			reset_check = 0;
+			
+			screen_clear();
+			audio_clear();
+			
+			gb_reset(&gb);
+		}
+		
+		if (usb_mode != 0xFF)
+		{
+			USBHostTasks();
+		}
+		
+		gb.direct.joypad |= JOYPAD_UP;
+		gb.direct.joypad |= JOYPAD_DOWN;
+		gb.direct.joypad |= JOYPAD_LEFT;
+		gb.direct.joypad |= JOYPAD_RIGHT;
+		gb.direct.joypad |= JOYPAD_A;
+		gb.direct.joypad |= JOYPAD_B;
+		gb.direct.joypad |= JOYPAD_SELECT;
+		gb.direct.joypad |= JOYPAD_START;
+
+		if ((controller_status_1 & 0x10) == 0x10) gb.direct.joypad &= ~JOYPAD_UP;
+		if ((controller_status_1 & 0x20) == 0x20) gb.direct.joypad &= ~JOYPAD_DOWN;
+		if ((controller_status_1 & 0x40) == 0x40) gb.direct.joypad &= ~JOYPAD_LEFT;
+		if ((controller_status_1 & 0x80) == 0x80) gb.direct.joypad &= ~JOYPAD_RIGHT;
+		if ((controller_status_1 & 0x01) == 0x01) gb.direct.joypad &= ~JOYPAD_A;
+		if ((controller_status_1 & 0x02) == 0x02) gb.direct.joypad &= ~JOYPAD_B;
+		if ((controller_status_1 & 0x04) == 0x04) gb.direct.joypad &= ~JOYPAD_SELECT;
+		if ((controller_status_1 & 0x08) == 0x08) gb.direct.joypad &= ~JOYPAD_START;
+
+		/* Execute CPU cycles until the screen has to be redrawn. */
+		gb_run_frame(&gb);
+
+		frame_counter++;
+		
+		if (frame_counter == 2) // only draw every other frame
+		{
+			frame_counter = 0;
+			screen_flip();
+		}
+
+#if ENABLE_SOUND
+		if (audio_enable > 0)
+		{
+			// playing audio
+			if (audio_bank == 1)
+			{
+				audio_callback(&gb, (uint8_t *)&audio_buffer2, AUDIO_NSAMPLES);
+			}
+			else if (audio_bank == 2)
+			{
+				audio_callback(&gb, (uint8_t *)&audio_buffer, AUDIO_NSAMPLES);
+			}
+		}
+#endif
+		// speed limiter for when occasionally the Gameboy is too fast
+		while (screen_sync == 0) { }
+		
+		screen_sync = 0;
+		
+#if ENABLE_SOUND
+		if (audio_enable > 0)
+		{
+			if (audio_bank == 1) audio_bank = 2;
+			else audio_bank = 1;
+			
+			audio_read = 0;
+		}
+#endif
+	}
+
+	return ret;
+}
+
+
+				
