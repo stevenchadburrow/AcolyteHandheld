@@ -33,7 +33,7 @@ Headphone jack and internal speaker<br>
 
 2x Sega Genesis controller ports<br>
 USB port for keyboard, mouse, or Xbox-360 controller<br>
-14 built-in mappable buttons on device<br>
+14 mappable buttons on device<br>
 
 <b>File System</b>
 
