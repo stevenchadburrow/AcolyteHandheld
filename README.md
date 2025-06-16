@@ -6,8 +6,6 @@ The Acolyte Handheld is a PIC32MZ based game console.  It is programmed with my 
 
 The Acolyte Handheld game console is switchable between VGA and LCD displays without needing to reboot.  It also supports four players simultaneously through the use of additional controllers.  The built-in NES emulator has been tested with over 120+ games at this point, including but not limited to the list <a href="https://github.com/stevenchadburrow/AcolyteHandPICd32/tree/main/NES">here</a>.  The imported GB emulator in very accurate and runs games at full speed.<br>
 
-<br>
-
 <b>Microcontroller</b>
 
 PIC32MZ2048EFH144 running at 260 MHz (slightly overclocked)<br>
