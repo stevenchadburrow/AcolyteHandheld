@@ -4,7 +4,7 @@ The Acolyte Handheld is a PIC32MZ based game console.  It is programmed with my 
 
 <b>Features</b>
 
-The Acolyte Handheld game console is switchable between VGA and LCD displays without needing to reboot.  It also supports four players simultaneously through the use of additional controllers.  The built-in NES emulator has been tested with over 120+ games at this point, including but not limited to the list <a href="https://github.com/stevenchadburrow/AcolyteHandPICd32/tree/main/NES">here</a>.  Most games run at full speed when running at 20 FPS.  As a benchmark, Super Mario Bros 3 runs about 5% too slow.  The imported GB emulator in very accurate and runs games at full speed.<br>
+The Acolyte Handheld game console is switchable between VGA and LCD displays without needing to reboot.  It also supports four players simultaneously through the use of additional controllers.  The built-in NES emulator has been tested with over 120+ games at this point, including but not limited to the list <a href="https://github.com/stevenchadburrow/AcolyteHandPICd32/tree/main/NES">here</a>.  Most games run at full speed when running at 20 FPS.  As a benchmark, Super Mario Bros 3 runs about 5% too slow.  The imported GB emulator is very accurate and runs games at full speed.<br>
 
 <b>Microcontroller</b>
 
