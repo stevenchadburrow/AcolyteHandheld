@@ -52,6 +52,8 @@ Supports GBC palettes and game save files.<br>
 
 <b>Links</b>
 
+<a href="http://forum.6502.org/">http://forum.6502.org/</a> for the 6502 Forum, an incredible resource for everything 6502 related.<br>
+<a href="https://www.nesdev.org/wiki/Nesdev_Wiki">https://www.nesdev.org/wiki/Nesdev_Wiki</a> for the very best NES programming guidance.<br> 
 <a href="https://www.aidanmocke.com/">https://www.aidanmocke.com/</a> for a bunch of PIC32MZ projects (without Harmony), including USB.<br>
 <a href="http://elm-chan.org/">http://elm-chan.org/</a> for a bunch of projects, including MMC (aka TF Card) and FatFs.<br>
 <a href="https://github.com/deltabeard/">https://github.com/deltabeard/</a> for a bunch of projects, including Peanut-GB and MiniGB-APU projects.<br>
