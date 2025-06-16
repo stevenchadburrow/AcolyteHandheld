@@ -877,8 +877,6 @@ const unsigned char usb_conversion[256] =
 	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
 };
 
-#include "lcd.c"
-
 void screen_flip()
 {
 	screen_frame = 1 - screen_frame;
@@ -917,6 +915,8 @@ void audio_clear()
 	}
 }
 
+#include "lcd.c"
+
 #include "usbhost.c"
 
 #include "interrupts.c"
@@ -937,7 +937,7 @@ void audio_clear()
 #include "setup.c" 
 
 // comment out for quicker reprogramming
-#include "game.c"
+//#include "game.c"
 
 
 
@@ -1429,8 +1429,8 @@ void menu_function()
 			}
 			else if (menu_pos == 3)
 			{ 
-				if (nes_hack_vsync_flag == 0) { nes_hack_sprite_priority = 1; nes_hack_vsync_flag = 1; }
-				else if (nes_hack_vsync_flag == 1) { nes_hack_sprite_priority = 0; nes_hack_vsync_flag = 0; }
+				if (nes_hack_vsync_flag == 0) { nes_hack_sprite_priority = 1; nes_hack_vsync_flag = 1; nes_hack_border_shrink = 1; }
+				else if (nes_hack_vsync_flag == 1) { nes_hack_sprite_priority = 0; nes_hack_vsync_flag = 0; nes_hack_border_shrink = 0; }
 				menu_wait = 0x0007FFFF;
 			}
 			else if (menu_pos == 4)
@@ -1602,6 +1602,11 @@ void menu_function()
 		screen_clear();
 		audio_clear();
 	}
+	
+	screen_clear();
+	audio_clear();
+	
+	screen_flip();
 
 	DelayMS(1000);
 }

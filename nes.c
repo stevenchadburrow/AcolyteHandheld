@@ -23,8 +23,9 @@ volatile unsigned char __attribute__((address(0x80071000))) ppu_ram[2048]; // pp
 volatile unsigned char __attribute__((address(0x80072000))) prg_ram[8192]; // cpu ram from 0x6000 to 0x7FFF (if used)
 volatile unsigned char __attribute__((address(0x80074000))) chr_ram[8192]; // ppu ram from 0x0000 to 0x1FFF (if used)
 
-unsigned long nes_hack_sprite_priority = 0; // change this accordingly
 unsigned long nes_hack_vsync_flag = 0; // change this accordingly
+unsigned long nes_hack_sprite_priority = 0; // change this accordingly
+unsigned long nes_hack_border_shrink = 0; // change this accordingly
 
 unsigned long nes_init_flag = 0;
 unsigned long nes_reset_flag = 0;
@@ -241,7 +242,7 @@ void nes_timers()
 	T9CON = 0x0000; // reset
 	T9CON = 0x0070; // prescale of 1:256, 16-bit
 	TMR9 = 0x0000; // zero out counter
-	PR9 = 0x4284;  // one whole frame (minus one)
+	PR9 = 0x4284;  // 0x4284 // one whole frame (minus one)
 
 	IPC10bits.T9IP = 0x2; // interrupt priority 2
 	IPC10bits.T9IS = 0x0; // interrupt sub-priority 0
@@ -277,18 +278,6 @@ void nes_error(unsigned char code)
 		}
 	}
 	else if (code == 0x01)
-	{
-		SendString("Verify Mismatch \\");
-		SendString("\n\r\\");
-		
-		screen_frame = 0;
-		
-		for (unsigned int i=0; i<28; i++)
-		{
-			display_string(0, 0x0008*i, "Verify Mismatch\\");
-		}
-	}
-	else if (code == 0x02)
 	{
 		SendString("Unknown Opcode \\");
 		SendLongHex(cpu_reg_pc);
@@ -422,68 +411,6 @@ unsigned char nes_load(char *filename)
 	return flag;
 }
 
-/*
-unsigned char nes_verify(char *filename)
-{
-	// Global variables
-	FIL file; // File handle for the file we open
-	DIR dir; // Directory information for the current directory
-	FATFS fso; // File System Object for the file system we are reading from
-	
-	//SendString("Initializing disk\n\r\\");
-	
-	// Wait for the disk to initialise
-    while(disk_initialize(0));
-    // Mount the disk
-    f_mount(&fso, "", 0);
-    // Change dir to the root directory
-    f_chdir("/");
-    // Open the directory
-    f_opendir(&dir, ".");
- 
-	unsigned char buffer[1];
-	unsigned int bytes;
-	unsigned int result;
-	unsigned char flag;
-	
-	unsigned long offset = 16 + (unsigned char)cart_rom[4]*16384 + (unsigned char)cart_rom[5]*8192;
-	
-	result = f_open(&file, filename, FA_READ);
-	if (result == 0)
-	{		
-		flag = 1;
-		
-		for (unsigned int i=0; i<offset; i++)
-		{
-			while (f_read(&file, &buffer[0], 1, &bytes) != 0) { } // MUST READ ONE BYTE AT A TIME!!!
-			
-			if ((unsigned char)cart_rom[i] != buffer[0])
-			{
-				nes_error(0x01);
-				
-				flag = 0;
-				
-				break;
-			}
-		}
-		
-		while (f_sync(&file) != 0) { }
-		while (f_close(&file) != 0) { }
-		
-		//SendString("Read cart ram from file\n\r\\");
-	}
-	else
-	{		
-		//SendString("Could not read cart ram from file\n\r\\");
-		
-		flag = 0;
-		
-		nes_error(0x00);
-	}	
-	
-	return flag;
-}
-*/
 
 // change for platform
 unsigned char nes_burn(char *directory, char *filename)
@@ -546,18 +473,6 @@ unsigned char nes_burn(char *directory, char *filename)
 		flag = 1;
 		
 		//SendString("Read successful\n\r\\");
-		/*
-		if (cart_rom[0] == 0x4E && // N
-			cart_rom[1] == 0x45 && // E
-			cart_rom[2] == 0x53) // S
-		{
-			flag = nes_verify(filename);
-		}
-		else // could be anything else, but let it go
-		{
-			flag = 0;
-		}
-		*/
 	}
 	else
 	{
@@ -1366,7 +1281,7 @@ void nes_write_pal_ram(unsigned long addr, unsigned char val)
 
 unsigned char nes_read_cart_rom(unsigned long addr)
 {
-	return (unsigned char)(unsigned char)cart_rom[addr];
+	return (unsigned char)cart_rom[addr];
 }
 
 void nes_mmc3_irq_toggle(unsigned long a12)
@@ -3469,11 +3384,24 @@ void nes_border()
 	{
 		unsigned char pixel_color = nes_palette_single[(pal_ram[0x00]&0x3F)];
 		
-		for (unsigned short y=8; y<232; y++) // remove overscan
+		if (nes_hack_border_shrink > 0)
 		{
-			for (unsigned short x=0; x<256; x++)
+			for (unsigned short y=16; y<224; y++) // remove overscan
 			{
-				nes_pixel_vga_raw(x, y, pixel_color); // background color
+				for (unsigned short x=0; x<256; x++)
+				{
+					nes_pixel_vga_raw(x, y, pixel_color); // background color
+				}
+			}
+		}
+		else
+		{
+			for (unsigned short y=8; y<232; y++) // remove overscan
+			{
+				for (unsigned short x=0; x<256; x++)
+				{
+					nes_pixel_vga_raw(x, y, pixel_color); // background color
+				}
 			}
 		}
 	}
@@ -3481,11 +3409,24 @@ void nes_border()
 	{
 		unsigned short pixel_color = nes_palette_double[(pal_ram[0x00]&0x3F)];
 		
-		for (unsigned short y=8; y<232; y++) // remove overscan
+		if (nes_hack_border_shrink > 0)
 		{
-			for (unsigned short x=0; x<256; x++)
+			for (unsigned short y=16; y<224; y++) // remove overscan
 			{
-				nes_pixel_lcd_raw(x, y, pixel_color); // background color
+				for (unsigned short x=0; x<256; x++)
+				{
+					nes_pixel_lcd_raw(x, y, pixel_color); // background color
+				}
+			}
+		}
+		else
+		{
+			for (unsigned short y=8; y<232; y++) // remove overscan
+			{
+				for (unsigned short x=0; x<256; x++)
+				{
+					nes_pixel_lcd_raw(x, y, pixel_color); // background color
+				}
 			}
 		}
 	}
@@ -3565,7 +3506,9 @@ void nes_background(unsigned long tile, unsigned long line)
 		//}
 		
 		if (line >= 8 && line < 232 && tile > 0 && tile < 31) // remove overscan
-		{		
+		{	
+			if (nes_hack_border_shrink > 0 && (line < 16 || line >= 224)) return;
+			
 			pixel_y = line;
 
 			scroll_t = ((ppu_reg_v & 0x0C00) | 0x03C0 | ((ppu_reg_v & 0x0380)>>4) | ((ppu_reg_v & 0x001C)>>2));
@@ -4377,7 +4320,9 @@ void nes_sprites(unsigned char ground, unsigned long min_y, unsigned long max_y)
 
 											if (ppu_flag_ls > 0 || pixel_x >= 8) 
 											{
-												if (pixel_x >= 0 && pixel_x < 256 && pixel_y >= 8 && pixel_y < 232)
+												if (pixel_x >= 0 && pixel_x < 256 && 
+													((nes_hack_border_shrink > 0 && pixel_y >= 16 && pixel_y < 224) ||
+													(nes_hack_border_shrink == 0 && pixel_y >= 8 && pixel_y < 232)))
 												{
 													if (ppu_flag_g > 0)
 													{
@@ -4417,7 +4362,9 @@ void nes_sprites(unsigned char ground, unsigned long min_y, unsigned long max_y)
 
 											if (ppu_flag_ls > 0 || pixel_x >= 8) 
 											{
-												if (pixel_x >= 0 && pixel_x < 256 && pixel_y >= 8 && pixel_y < 232)
+												if (pixel_x >= 0 && pixel_x < 256 && 
+													((nes_hack_border_shrink > 0 && pixel_y >= 16 && pixel_y < 224) ||
+													(nes_hack_border_shrink == 0 && pixel_y >= 8 && pixel_y < 232)))
 												{
 													if (ppu_flag_g > 0)
 													{
@@ -5512,7 +5459,7 @@ void nes_loop(unsigned long loop_count)
 	
 	if (cpu_current_cycles == 0)
 	{	
-		nes_error(0x02);
+		nes_error(0x01);
 	}
 	
 	if (map_number == 1) // mmc1
