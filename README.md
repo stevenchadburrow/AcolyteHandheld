@@ -47,14 +47,14 @@ FT232RL USB-to-UART adapter<br>
 
 <b>NES Emulator</b>
 
-My own NES Emulator, supporting NROM, UxROM, CxROM, AxROM, MMC1, and MMC3 mappers.<br>
-Programmed with speed over accuracy in mind, runs most games at full speed without alteration.<br>
-Supports settings adjustments, game save files, and save-states.<br>
+My own NES Emulator, supporting NROM, UxROM, CxROM, AxROM, MMC1, and MMC3 mappers<br>
+Programmed with speed over accuracy in mind, runs most games at full speed without alteration<br>
+Supports settings adjustments, game save files, and save-states<br>
 
 <b>GB Emulator</b>
 
 Mahyar Koshkouei's <a href="https://github.com/deltabeard/Peanut-GB">Peanut-GB (with MiniGB-APU) Emulator</a><br>
-Supports GBC palettes and game save files.<br>
+Supports GBC palettes and game save files<br>
 
 <b>Links</b>
 
