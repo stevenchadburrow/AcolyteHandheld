@@ -31,7 +31,7 @@ USB port for keyboard, mouse, or Xbox-360 controller<br>
 
 <b>File System</b>
 
-Elm-Chan's <a href="https://elm-chan.org/fsw/ff/">FatFS Generic FAT Filesystem Module</a> using SPI Micro TF Card<br>
+Elm-Chan's <a href="https://elm-chan.org/fsw/ff/">FatFS Generic FAT Filesystem Module</a> for Micro TF Cards<br>
 (use command 'sudo mkfs.vfat /dev/sdX' to format card)<br>
 
 <b>UART</b>
