@@ -4,6 +4,8 @@ This is a PIC32MZ based game console.  It is programmed with my own NES emulator
 
 <b>Features</b>
 
+The Acolyte Handheld game console is switchable between VGA and LCD displays without needing to reboot.  It also supports four players simultaneously through the use of additional controllers.  The built-in NES emulator has been tested with over 120+ games at this point, including but not limited to the list <a href="https://github.com/stevenchadburrow/AcolyteHandPICd32/tree/main/NES">here</a>.  The imported GB emulator in very accurate and runs games at full speed.<br>
+
 <br>
 
 <b>Microcontroller</b>
@@ -27,7 +29,7 @@ Headphone jack and internal speaker<br>
 
 2x Sega Genesis controller ports<br>
 USB port for keyboard, mouse, or Xbox-360 controller<br>
-14 built-in buttons on device<br>
+14 built-in mappable buttons on device<br>
 
 <b>File System</b>
 
@@ -42,7 +44,7 @@ FT232RL USB-to-UART adapter<br>
 <b>NES Emulator</b>
 
 My own NES Emulator, supporting NROM, UxROM, CxROM, MMC1, MMC3, and AxROM mappers.<br>
-Programmed with speed over accuracy in mind, runs most games without alteration.<br>
+Programmed with speed over accuracy in mind, runs most games at full speed without alteration.<br>
 Supports settings adjustments, game save files, and save-states.<br>
 
 <b>GB Emulator</b>
