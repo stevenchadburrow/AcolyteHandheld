@@ -1,6 +1,6 @@
 # Acolyte Handheld
 
-The Acolyte Handheld is a portable PIC32MZ based game console.  It is programmed with my own NES emulator, as well as the <a href="https://github.com/deltabeard/Peanut-GB">Peanut-GB Emulator</a>.  Most of the code is derived from my previous project <a href="https://github.com/stevenchadburrow/AcolyteHandPICd32">here</a>.<br>
+The Acolyte Handheld is a portable PIC32MZ based game console.  It is programmed with my own homebrew NES emulator, as well as the <a href="https://github.com/deltabeard/Peanut-GB">Peanut-GB Emulator</a>.  Most of the code is derived from my previous project <a href="https://github.com/stevenchadburrow/AcolyteHandPICd32">here</a>.<br>
 
 <b>Features</b>
 
@@ -48,7 +48,7 @@ FT232RL USB-to-UART adapter<br>
 
 <b>NES Emulator</b>
 
-My own NES Emulator, supporting NROM, UxROM, CxROM, AxROM, MMC1, and MMC3 mappers<br>
+My own homebrew NES Emulator, supporting NROM, UxROM, CxROM, AxROM, MMC1, and MMC3 mappers<br>
 Programmed with speed over accuracy in mind, runs most games at full speed without alteration<br>
 Supports settings adjustments, game save files, and save-states<br>
 
