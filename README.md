@@ -10,7 +10,7 @@ The Acolyte Handheld is a portable PIC32MZ based game console.  It is programmed
   <li>Supports four players simultaneously through the use of additional controllers.</li>
   <li>The built-in NES emulator has been tested with over 120+ games at this point, including but not limited to the list <a href="https://github.com/stevenchadburrow/AcolyteHandPICd32/tree/main/NES">here</a>.  As a benchmark, Super Mario Bros 3 currently runs about 5% too slow when at 20 FPS, though most games run at full speed.  My demo video of Super Mario Bros 3 can be found <a href="https://www.youtube.com/watch?v=WGrEMQLWrP4">here</a>.</li>
   <li>The imported GB emulator is very accurate and runs games at full speed.</li>
-  <li>3D printed enclosure and buttons custom fit to this build.</li>
+  <li>Custom built 3D printed enclosure and buttons.</li>
 </ul>
 
 <b>Specifications</b>
