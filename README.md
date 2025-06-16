@@ -53,7 +53,7 @@ Supports GBC palettes and game save files.<br>
 <b>Links</b>
 
 <a href="https://www.aidanmocke.com/">https://www.aidanmocke.com/</a> for a bunch of PIC32MZ projects (without Harmony), including USB.<br>
-<a href="http://elm-chan.org/">http://elm-chan.org/</a> for a bunch of projects, including MMC (aka SDcard) and FatFs.<br>
+<a href="http://elm-chan.org/">http://elm-chan.org/</a> for a bunch of projects, including MMC (aka TF Card) and FatFs.<br>
 <a href="https://github.com/deltabeard/">https://github.com/deltabeard/</a> for a bunch of projects, including Peanut-GB and MiniGB-APU projects.<br>
 
 
