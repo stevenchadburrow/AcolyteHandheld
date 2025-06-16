@@ -12,7 +12,7 @@ The Acolyte Handheld is a portable PIC32MZ based game console.  It is programmed
   <li>The imported GB emulator is very accurate and runs games at full speed.</li>
 </ul>
 
-<b>Microcontroller</b>
+<b>Specifications</b>
 
 PIC32MZ2048EFH144 running at 260 MHz (slightly overclocked)<br>
 Internal memory of 512KB of RAM and 2MB of Flash ROM<br>
