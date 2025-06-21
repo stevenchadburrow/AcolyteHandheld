@@ -9,19 +9,18 @@
 // if using for other platforms, adjust variable types here
 // 'volatile' seems to keep it from getting general exception errors
 // but it also slows down the whole system!
-volatile unsigned char *cart_rom = (volatile unsigned char *)0x9D100000;
 
 unsigned long prg_offset = 0x00000000; // offsets in cart_rom
 unsigned long chr_offset = 0x00000000;
 unsigned long end_offset = 0x00000000;
 
 volatile unsigned char __attribute__((coherent, aligned(8))) pal_ram[32]; // special palette ram inside of ppu
-volatile unsigned char __attribute__((coherent, aligned(8))) oam_ram[256]; // special sprite ram inside of ppu
+volatile unsigned char __attribute__((coherent, aligned(8))) oam_ram[256]; // special sprite ram inside of ppu 
 
-volatile unsigned char __attribute__((address(0x80070000))) cpu_ram[2048]; // only cpu ram from 0x0000 to 0x07FF
-volatile unsigned char __attribute__((address(0x80071000))) ppu_ram[2048]; // ppu ram from 0x2000 to 0x2FFF (halved, mirrored)
-volatile unsigned char __attribute__((address(0x80072000))) prg_ram[8192]; // cpu ram from 0x6000 to 0x7FFF (if used)
-volatile unsigned char __attribute__((address(0x80074000))) chr_ram[8192]; // ppu ram from 0x0000 to 0x1FFF (if used)
+volatile unsigned char *cpu_ram; // only cpu ram from 0x0000 to 0x07FF
+volatile unsigned char *ppu_ram; // ppu ram from 0x2000 to 0x2FFF (halved, mirrored)
+volatile unsigned char *prg_ram; // cpu ram from 0x6000 to 0x7FFF (if used)
+volatile unsigned char *chr_ram; // ppu ram from 0x0000 to 0x1FFF (if used)
 
 unsigned long nes_hack_vsync_flag = 0; // change this accordingly
 unsigned long nes_hack_sprite_priority = 0; // change this accordingly
@@ -5401,6 +5400,11 @@ void nes_sprite_0_calc()
 
 void nes_init()
 {
+	cpu_ram = ext_ram + 0x0000; // only cpu ram from 0x0000 to 0x07FF
+	ppu_ram = ext_ram + 0x0800; // ppu ram from 0x2000 to 0x2FFF (halved, mirrored)
+	prg_ram = ext_ram + 0x1000; // cpu ram from 0x6000 to 0x7FFF (if used)
+	chr_ram = ext_ram + 0x2000; // ppu ram from 0x0000 to 0x1FFF (if used)
+	
 	if (nes_init_flag == 0)
 	{
 		nes_init_flag = 1;

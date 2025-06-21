@@ -619,9 +619,9 @@ volatile void __attribute__((vector(_TIMER_8_VECTOR), interrupt(ipl3srs))) t8_ha
 	{
 		if (audio_bank == 0)
 		{
-			// 8-bit signed audio add 0x0080, unsigned add 0x0000
-			PORTA = (unsigned short)((unsigned char)(((audio_buffer[(audio_read)%AUDIO_LEN] & 0x00FF) * audio_volume) / 4) + 0xC000); // needs 0xC000 to not reset LCD
-			PORTB = (unsigned short)((unsigned char)(((audio_buffer[(audio_read)%AUDIO_LEN] & 0x00FF) * audio_volume) / 4) + 0x0000); // doesn't matter
+			// 6-bit signed audio add 0x0080, unsigned add 0x0000
+			PORTA = (unsigned short)((unsigned char)(((audio_buffer[(audio_read)%AUDIO_LEN] & 0x00FC) * audio_volume) / 4) + 0xC000); // needs 0xC000 to not reset LCD
+			PORTB = (unsigned short)((unsigned char)(((audio_buffer[(audio_read)%AUDIO_LEN] & 0x00FC) * audio_volume) / 4) + 0x0000); // doesn't matter
 
 			audio_read = audio_read + 1;
 
@@ -632,9 +632,9 @@ volatile void __attribute__((vector(_TIMER_8_VECTOR), interrupt(ipl3srs))) t8_ha
 		}
 		else if (audio_bank == 1)
 		{
-			// 8-bit signed audio add 0x0080, unsigned add 0x0000
-			PORTA = (unsigned short)((unsigned char)(((audio_buffer[(audio_read)%AUDIO_EXT] & 0x00FF) * audio_volume) / 4) + 0xC080); // needs 0xC000 to not reset LCD
-			PORTB = (unsigned short)((unsigned char)(((audio_buffer[(audio_read)%AUDIO_EXT] & 0x00FF) * audio_volume) / 4) + 0x0080); // doesn't matter
+			// 6-bit signed audio add 0x0080, unsigned add 0x0000
+			PORTA = (unsigned short)((unsigned char)(((audio_buffer[(audio_read)%AUDIO_EXT] & 0x00FC) * audio_volume) / 4) + 0xC080); // needs 0xC000 to not reset LCD
+			PORTB = (unsigned short)((unsigned char)(((audio_buffer[(audio_read)%AUDIO_EXT] & 0x00FC) * audio_volume) / 4) + 0x0080); // doesn't matter
 
 			audio_read = audio_read + 1;
 
@@ -645,9 +645,9 @@ volatile void __attribute__((vector(_TIMER_8_VECTOR), interrupt(ipl3srs))) t8_ha
 		}
 		else if (audio_bank == 2)
 		{
-			// 8-bit signed audio add 0x0080, unsigned add 0x0000
-			PORTA = (unsigned short)((unsigned char)(((audio_buffer2[(audio_read)%AUDIO_EXT] & 0x00FF) * audio_volume) / 4) + 0xC080); // needs 0xC000 to not reset LCD
-			PORTB = (unsigned short)((unsigned char)(((audio_buffer2[(audio_read)%AUDIO_EXT] & 0x00FF) * audio_volume) / 4) + 0x0080); // doesn't matter
+			// 6-bit signed audio add 0x0080, unsigned add 0x0000
+			PORTA = (unsigned short)((unsigned char)(((audio_buffer2[(audio_read)%AUDIO_EXT] & 0x00FC) * audio_volume) / 4) + 0xC080); // needs 0xC000 to not reset LCD
+			PORTB = (unsigned short)((unsigned char)(((audio_buffer2[(audio_read)%AUDIO_EXT] & 0x00FC) * audio_volume) / 4) + 0x0080); // doesn't matter
 
 			audio_read = audio_read + 1;
 

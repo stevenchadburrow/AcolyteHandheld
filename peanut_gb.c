@@ -21,7 +21,6 @@ struct priv_t
 };
 
 
-volatile uint8_t __attribute__((address(0x80078000))) cart_ram[32768];
 uint8_t __attribute__((coherent)) boot_rom[256];
 uint8_t selected_palette_vga[3][4];
 uint16_t selected_palette_lcd[3][4];

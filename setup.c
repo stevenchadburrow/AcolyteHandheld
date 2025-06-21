@@ -1,5 +1,4 @@
 
-
 void __attribute__((optimize("O0"))) Setup()
 {
 	// turn off analog
@@ -137,6 +136,103 @@ void __attribute__((optimize("O0"))) Setup()
 	CFGCONbits.IOLOCK = 1; // PPS is locked
 	SYSKEY = 0x0; // re-lock
 	 
+	
+	
+
+	// set up UART here
+	U2BRG = 0x0119; // 43.333 MHz to 9600 baud = 43333000/(16*9600)-1 = 281.12 = 0x0119
+	
+	U2MODEbits.STSEL = 0; // 1-Stop bit
+	U2MODEbits.PDSEL = 0; // No Parity, 8-Data bits
+	U2MODEbits.BRGH = 0; // Standard-Speed mode
+	U2MODEbits.ABAUD = 0; // Auto-Baud disabled
+	
+	//U2MODEbits.URXINV = 1; // reverse polarity
+	//U2STAbits.UTXINV = 1; // reverse polarity
+	
+	U2MODEbits.UEN = 0x0; // just use TX and RX
+	
+	U2STAbits.UTXISEL = 0x0; // Interrupt after one TX character is transmitted
+	U2STAbits.URXISEL = 0x0; // interrupt after one RX character is received
+	
+	U2STAbits.URXEN = 1; // enable RX
+	U2STAbits.UTXEN = 1; // enable TX
+	
+	IPC36bits.U2RXIP = 0x4; // U2RX interrupt priority level 4
+	IPC36bits.U2RXIS = 0x0; // U2RX interrupt sub-priority level 0
+	//IPC39bits.U2EIP = 0x4; // U2E interrupt priority level 4
+	//IPC39bits.U2EIS = 0x1; // U2E interrupt sub-priority level 1
+	IFS4bits.U2RXIF = 0;  // clear interrupt flag
+	IEC4bits.U2RXIE = 1; // U2RX interrupt on (set priority here?)
+	
+	U2MODEbits.ON = 1; // turn UART on
+	
+	
+	// set up interrupt-on-change for menu button
+	CNCONKbits.ON = 1; // turn on interrupt-on-change
+	CNCONKbits.EDGEDETECT = 1; // edge detect, not mismatch
+	CNNEK = 0x0080; // negative edge on RK7
+	CNFK = 0x0000; // clear flags
+	
+	IPC31bits.CNKIP = 0x1; // interrupt priority 1
+	IPC31bits.CNKIS = 0x0; // interrupt sub-priority 0
+	IFS3bits.CNKIF = 0;  // clear interrupt flag
+	IEC3bits.CNKIE = 1; // enable interrupts
+	
+	
+	// set up SPI here
+	PORTDbits.RD9 = 1; // CS is high
+	PORTDbits.RD10 = 1; // MOSI is high
+	PORTDbits.RD1 = 0; // CLK is low	
+	
+	SPI1CONbits.ON = 0; // turn SPI module off
+	SPI1CON2 = 0; // disable audio, etc.
+	SPI1CONbits.DISSDI = 0; // SDI controlled by module
+	SPI1CONbits.DISSDO = 0; // SDO controlled by module
+	SPI1CONbits.MODE16 = 0x0; // 8-bit mode
+	SPI1CONbits.MSTEN = 1; // host mode
+	SPI1CONbits.MSSEN = 0; // client SS disabled
+	SPI1CONbits.SSEN = 0; // client SS disabled
+	SPI1CONbits.SMP = 0; // input sampled in middle of output time
+	SPI1CONbits.CKE = 1; // output changes on idle-to-active clock
+	SPI1CONbits.CKP = 0; // clock is idle low, active high
+	SPI1CONbits.ON = 1; // turn SPI module on
+	
+	SPI1BUF = 0xFFFF; // dummy write
+	while (SPI1STATbits.SPIRBF == 0) { } // wait
+	sdcard_block[0] = SPI1BUF; // dummy read
+	
+	// set shadow register priorities???
+	PRISS = 0x76543210; //0x76543210;
+	
+	// enable multi-vector interrupts???
+	INTCONSET = _INTCON_MVEC_MASK;
+	
+	// IDK, just turn on interrupts globally???
+	__builtin_enable_interrupts();
+	
+	
+	// turn LED off by default
+	PORTDbits.RD7 = 1;
+	
+	// clear usb buffers
+	for (unsigned int i=0; i<256; i++)
+	{
+		usb_state_array[i] = 0x00;
+		usb_cursor_x[i] = 0x0000;
+		usb_cursor_y[i] = 0x0000;
+		
+	}	
+
+	// for debug purposes
+	//TRISKbits.TRISK7 = 1;
+	//while (PORTKbits.RK7 == 0) { }
+	
+	return;
+}
+
+void __attribute__((optimize("O0"))) Display()
+{
 	// set OC2 and OC3 and TMR5, horizontal visible and sync clocks
 	OC2CON = 0x0; // reset OC2
 	OC2CON = 0x0000000D; // toggle, use Timer5
@@ -271,87 +367,10 @@ void __attribute__((optimize("O0"))) Setup()
 	DCH3DSIZ = 1; // dst size 
 	DCH3CSIZ = 1; // bytes per event
 	
-
-	// set up UART here
-	U2BRG = 0x0119; // 43.333 MHz to 9600 baud = 43333000/(16*9600)-1 = 281.12 = 0x0119
 	
-	U2MODEbits.STSEL = 0; // 1-Stop bit
-	U2MODEbits.PDSEL = 0; // No Parity, 8-Data bits
-	U2MODEbits.BRGH = 0; // Standard-Speed mode
-	U2MODEbits.ABAUD = 0; // Auto-Baud disabled
-	
-	//U2MODEbits.URXINV = 1; // reverse polarity
-	//U2STAbits.UTXINV = 1; // reverse polarity
-	
-	U2MODEbits.UEN = 0x0; // just use TX and RX
-	
-	U2STAbits.UTXISEL = 0x0; // Interrupt after one TX character is transmitted
-	U2STAbits.URXISEL = 0x0; // interrupt after one RX character is received
-	
-	U2STAbits.URXEN = 1; // enable RX
-	U2STAbits.UTXEN = 1; // enable TX
-	
-	IPC36bits.U2RXIP = 0x4; // U2RX interrupt priority level 4
-	IPC36bits.U2RXIS = 0x0; // U2RX interrupt sub-priority level 0
-	//IPC39bits.U2EIP = 0x4; // U2E interrupt priority level 4
-	//IPC39bits.U2EIS = 0x1; // U2E interrupt sub-priority level 1
-	IFS4bits.U2RXIF = 0;  // clear interrupt flag
-	IEC4bits.U2RXIE = 1; // U2RX interrupt on (set priority here?)
-	
-	U2MODEbits.ON = 1; // turn UART on
-	
-	
-	// set up interrupt-on-change for menu button
-	CNCONKbits.ON = 1; // turn on interrupt-on-change
-	CNCONKbits.EDGEDETECT = 1; // edge detect, not mismatch
-	CNNEK = 0x0080; // negative edge on RK7
-	CNFK = 0x0000; // clear flags
-	
-	IPC31bits.CNKIP = 0x1; // interrupt priority 1
-	IPC31bits.CNKIS = 0x0; // interrupt sub-priority 0
-	IFS3bits.CNKIF = 0;  // clear interrupt flag
-	IEC3bits.CNKIE = 1; // enable interrupts
-	
-	
-	// set up SPI here
-	PORTDbits.RD9 = 1; // CS is high
-	PORTDbits.RD10 = 1; // MOSI is high
-	PORTDbits.RD1 = 0; // CLK is low	
-	
-	SPI1CONbits.ON = 0; // turn SPI module off
-	SPI1CON2 = 0; // disable audio, etc.
-	SPI1CONbits.DISSDI = 0; // SDI controlled by module
-	SPI1CONbits.DISSDO = 0; // SDO controlled by module
-	SPI1CONbits.MODE16 = 0x0; // 8-bit mode
-	SPI1CONbits.MSTEN = 1; // host mode
-	SPI1CONbits.MSSEN = 0; // client SS disabled
-	SPI1CONbits.SSEN = 0; // client SS disabled
-	SPI1CONbits.SMP = 0; // input sampled in middle of output time
-	SPI1CONbits.CKE = 1; // output changes on idle-to-active clock
-	SPI1CONbits.CKP = 0; // clock is idle low, active high
-	SPI1CONbits.ON = 1; // turn SPI module on
-	
-	SPI1BUF = 0xFFFF; // dummy write
-	while (SPI1STATbits.SPIRBF == 0) { } // wait
-	sdcard_block[0] = SPI1BUF; // dummy read
-	
-	// set shadow register priorities???
-	PRISS = 0x76543210; //0x76543210;
-	
-	// enable multi-vector interrupts???
-	INTCONSET = _INTCON_MVEC_MASK;
-	
-	// IDK, just turn on interrupts globally???
-	__builtin_enable_interrupts();
-	
-
 	// default to black screen
 	PORTH = 0;
 	
-	// turn LED off by default
-	PORTDbits.RD7 = 1;
-
-
 	for (unsigned short i=0; i<AUDIO_EXT; i++)
 	{
 		audio_buffer[i] = 0x00;
@@ -371,14 +390,8 @@ void __attribute__((optimize("O0"))) Setup()
 		screen_line[i] = 0x00;
 	}
 	
-	// clear usb buffers
-	for (unsigned int i=0; i<256; i++)
-	{
-		usb_state_array[i] = 0x00;
-		usb_cursor_x[i] = 0x0000;
-		usb_cursor_y[i] = 0x0000;
-		
-	}	
+	screen_frame = 0;
+	screen_scanline = 771; //1025; // start of vertical sync
 	
 	// turn on video timers
 	T5CONbits.ON = 1; // turn on TMR5 horizontal sync (cycle offset pre-calculated above)
@@ -388,10 +401,5 @@ void __attribute__((optimize("O0"))) Setup()
 	
 	T8CONbits.ON = 1; // turn on TMR8 for audio
 	
-	// for debug purposes
-	//TRISKbits.TRISK7 = 1;
-	//while (PORTKbits.RK7 == 0) { }
-	
 	return;
 }
-

@@ -454,6 +454,11 @@ void _general_exception_handler(void)
 }
 
 
+volatile unsigned char *cart_rom = (volatile unsigned char *)0x9D100000;
+volatile unsigned char __attribute__((address(0x8006E000))) sys_ram[8192]; // used for TotalSMS
+volatile unsigned char __attribute__((address(0x80070000))) cart_ram[32768]; // used as normal ram for PeanutGB and TotalSMS
+volatile unsigned char __attribute__((address(0x80078000))) ext_ram[32768]; // used for pointing memory address for NES, GB, and SMS
+
 #define SCREEN_X 768
 #define SCREEN_X2 1536
 #define SCREEN_Y 240
@@ -463,7 +468,7 @@ void _general_exception_handler(void)
 
 // video
 volatile unsigned char __attribute__((coherent,address(0x80010000))) screen_buffer[SCREEN_XY2]; // visible portion of screen
-volatile unsigned char __attribute__((address(0x80077000))) screen_line[SCREEN_X]; // black line
+volatile unsigned char __attribute__((coherent,address(0x8006A000))) screen_line[SCREEN_X]; // black line
 volatile unsigned char screen_frame = 0;
 volatile unsigned int screen_scanline = 771; //1025; // start of vertical sync
 volatile unsigned char __attribute__((coherent)) screen_zero[2] = { 0x00, 0x00 }; // zero value for black
@@ -496,8 +501,8 @@ void screen_pixel_lcd_raw(unsigned short pos_x, unsigned short pos_y, unsigned s
 #define AUDIO_EXT 1024
 
 // audio
-volatile unsigned char __attribute__((address(0x80077800))) audio_buffer[AUDIO_EXT];
-volatile unsigned char __attribute__((address(0x80077C00))) audio_buffer2[AUDIO_EXT];
+volatile unsigned char __attribute__((coherent,address(0x8006D000))) audio_buffer[AUDIO_EXT];
+volatile unsigned char __attribute__((coherent,address(0x8006D800))) audio_buffer2[AUDIO_EXT];
 volatile unsigned int audio_read = 0;
 volatile unsigned int audio_write = 0;
 volatile unsigned int audio_enable = 0;
@@ -877,6 +882,23 @@ const unsigned char usb_conversion[256] =
 	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
 };
 
+
+
+#include "lcd.c"
+
+#include "usbhost.c"
+
+#include "interrupts.c"
+#include "sdcard.c" 
+
+#include "ffconf.h"
+#include "ff.h"
+#include "ff.c"
+#include "diskio.h"
+#include "diskio.c"
+
+#include "nvm.c"
+
 void screen_flip()
 {
 	screen_frame = 1 - screen_frame;
@@ -915,24 +937,12 @@ void audio_clear()
 	}
 }
 
-#include "lcd.c"
-
-#include "usbhost.c"
-
-#include "interrupts.c"
-#include "sdcard.c" 
-
-#include "ffconf.h"
-#include "ff.h"
-#include "ff.c"
-#include "diskio.h"
-#include "diskio.c"
-
-#include "nvm.c"
 
 #include "nes.c"
 
 #include "peanut_gb.c"
+
+#include "total_sms.c"
 
 #include "setup.c" 
 
@@ -1007,6 +1017,34 @@ void list_generate()
 				if (list_name[list_total*12+i] == '.' &&
 					list_name[list_total*12+i+1] == 'G' &&
 					list_name[list_total*12+i+2] == 'B') // GB games
+				{
+					result = 1;
+							
+					break;
+				}
+				
+				if (list_name[list_total*12+i] == '.' &&
+					list_name[list_total*12+i+1] == 'S' &&
+					list_name[list_total*12+i+2] == 'M' &&
+					list_name[list_total*12+i+3] == 'S') // SMS games
+				{
+					result = 1;
+							
+					break;
+				}
+				
+				if (list_name[list_total*12+i] == '.' &&
+					list_name[list_total*12+i+1] == 'G' &&
+					list_name[list_total*12+i+2] == 'G') // GG games
+				{
+					result = 1;
+							
+					break;
+				}
+				
+				if (list_name[list_total*12+i] == '.' &&
+					list_name[list_total*12+i+1] == 'S' &&
+					list_name[list_total*12+i+2] == 'G') // SG games
 				{
 					result = 1;
 							
@@ -1212,9 +1250,9 @@ void menu_display()
 		display_character(0x0000, 0x0000 + i * 0x0008, ' ');
 	}
 	
-	if (cart_rom[0] == 0x4E && // N
-		cart_rom[1] == 0x45 && // E
-		cart_rom[2] == 0x53) // S
+	if (cart_rom[0] == 0x4E &&
+		cart_rom[1] == 0x45 &&
+		cart_rom[2] == 0x53) // NES
 	{
 		display_string(0x0000, 0x0000, " Return to Game\\");
 
@@ -1226,14 +1264,14 @@ void menu_display()
 		else if (audio_volume == 2) display_string(0x0040, 0x0010, "2 => 3\\");
 		else if (audio_volume == 3) display_string(0x0040, 0x0010, "3 => 4\\");
 		else if (audio_volume == 4) display_string(0x0040, 0x0010, "4 => 0\\");
-		
-		if (nes_hack_vsync_flag == 0) display_string(0x0000, 0x0018, " Hacks Disabled => Enabled\\");
-		else if (nes_hack_vsync_flag == 1) display_string(0x0000, 0x0018, " Hacks Enabled => Disabled\\");
 
-		display_string(0x0000, 0x0020, " Mapping \\");
-		if (controller_mapping == 1) display_string(0x0048, 0x0020, "1 => 2\\");
-		else if (controller_mapping == 2) display_string(0x0048, 0x0020, "2 => 0\\");
-		else display_string(0x0048, 0x0020, "0 => 1\\");
+		display_string(0x0000, 0x0018, " Mapping \\");
+		if (controller_mapping == 1) display_string(0x0048, 0x0018, "1 => 2\\");
+		else if (controller_mapping == 2) display_string(0x0048, 0x0018, "2 => 0\\");
+		else display_string(0x0048, 0x0018, "0 => 1\\");
+		
+		if (nes_hack_vsync_flag == 0) display_string(0x0000, 0x0020, " Hacks Disabled => Enabled\\");
+		else if (nes_hack_vsync_flag == 1) display_string(0x0000, 0x0020, " Hacks Enabled => Disabled\\");
 		
 		display_string(0x0000, 0x0028, " Controllers \\");
 		if (controller_config == 1) display_string(0x0068, 0x0028, "1P => 2P\\");
@@ -1267,7 +1305,10 @@ void menu_display()
 		display_string(0x0000, 0x0078, " Save State C\\");
 		display_string(0x0000, 0x0080, " Save State D\\");
 	}
-	else // GB?
+	else if (cart_rom[0x0104] == 0xCE &&
+		cart_rom[0x0105] == 0xED &&
+		cart_rom[0x0106] == 0x66 &&
+		cart_rom[0x0107] == 0x66) // GB
 	{
 		display_string(0x0000, 0x0000, " Return to Game\\");
 
@@ -1280,43 +1321,69 @@ void menu_display()
 		else if (audio_volume == 3) display_string(0x0040, 0x0010, "3 => 4\\");
 		else if (audio_volume == 4) display_string(0x0040, 0x0010, "4 => 0\\");
 		
-		display_string(0x0000, 0x0018, " Palette \\");
+		display_string(0x0000, 0x0018, " Mapping \\");
+		if (controller_mapping == 1) display_string(0x0048, 0x0018, "1 => 2\\");
+		else if (controller_mapping == 2) display_string(0x0048, 0x0018, "2 => 0\\");
+		else display_string(0x0048, 0x0018, "0 => 1\\");
+		
+		display_string(0x0000, 0x0020, " Palette \\");
 		if (palette_num < 10)
 		{
-			display_character(0x0048, 0x0018, ' ');
-			display_character(0x0050, 0x0018, (char)(palette_num + '0'));
+			display_character(0x0048, 0x0020, ' ');
+			display_character(0x0050, 0x0020, (char)(palette_num + '0'));
 		}
 		else
 		{
-			display_character(0x0048, 0x0018, '1');
-			display_character(0x0050, 0x0018, (char)((palette_num % 10) + '0'));
+			display_character(0x0048, 0x0020, '1');
+			display_character(0x0050, 0x0020, (char)((palette_num % 10) + '0'));
 		}
-		display_string(0x0058, 0x0018, " => \\");
+		display_string(0x0058, 0x0020, " => \\");
 		if (palette_num >= 15)
 		{
-			display_character(0x0078, 0x0018, ' ');
-			display_character(0x0080, 0x0018, '0');
+			display_character(0x0078, 0x0020, ' ');
+			display_character(0x0080, 0x0020, '0');
 		}
 		else if (palette_num < 9)
 		{
-			display_character(0x0078, 0x0018, ' ');
-			display_character(0x0080, 0x0018, (char)((palette_num+1) + '0'));
+			display_character(0x0078, 0x0020, ' ');
+			display_character(0x0080, 0x0020, (char)((palette_num+1) + '0'));
 		}
 		else
 		{
-			display_character(0x0078, 0x0018, '1');
-			display_character(0x0080, 0x0018, (char)(((palette_num+1) % 10) + '0'));
+			display_character(0x0078, 0x0020, '1');
+			display_character(0x0080, 0x0020, (char)(((palette_num+1) % 10) + '0'));
 		}
-		
-		display_string(0x0000, 0x0020, " Mapping \\");
-		if (controller_mapping == 1) display_string(0x0048, 0x0020, "1 => 2\\");
-		else if (controller_mapping == 2) display_string(0x0048, 0x0020, "2 => 0\\");
-		else display_string(0x0048, 0x0020, "0 => 1\\");
 		
 		display_string(0x0000, 0x0028, " Load Game E\\");
 		display_string(0x0000, 0x0030, " Load Game F\\");
 		display_string(0x0000, 0x0038, " Save Game E\\");
 		display_string(0x0000, 0x0040, " Save Game F\\");
+	}
+	else // SEGA
+	{
+		display_string(0x0000, 0x0000, " Return to Game\\");
+
+		display_string(0x0000, 0x0008, " Switch Screens\\");
+		
+		display_string(0x0000, 0x0010, " Volume \\");
+		if (audio_volume == 0) display_string(0x0040, 0x0010, "0 => 1\\");
+		else if (audio_volume == 1) display_string(0x0040, 0x0010, "1 => 2\\");
+		else if (audio_volume == 2) display_string(0x0040, 0x0010, "2 => 3\\");
+		else if (audio_volume == 3) display_string(0x0040, 0x0010, "3 => 4\\");
+		else if (audio_volume == 4) display_string(0x0040, 0x0010, "4 => 0\\");
+		
+		display_string(0x0000, 0x0018, " Mapping \\");
+		if (controller_mapping == 1) display_string(0x0048, 0x0018, "1 => 2\\");
+		else if (controller_mapping == 2) display_string(0x0048, 0x0018, "2 => 0\\");
+		else display_string(0x0048, 0x0018, "0 => 1\\");
+		
+		if (button_disable == 0) display_string(0x0000, 0x0020, " Buttons Enabled => Disabled\\");
+		else if (button_disable == 1) display_string(0x0000, 0x0020, " Buttons Disabled => Enabled\\");
+		
+		display_string(0x0000, 0x0028, " Load Game G\\");
+		display_string(0x0000, 0x0030, " Load Game H\\");
+		display_string(0x0000, 0x0038, " Save Game G\\");
+		display_string(0x0000, 0x0040, " Save Game H\\");
 	}
 }
 
@@ -1416,6 +1483,7 @@ void menu_function()
 				screen_clear();
 				audio_clear();
 				lcd_init();
+				if (screen_handheld == 0) { Display(); screen_clear(); }
 				menu_loop = 0;
 			}
 			else if (menu_pos == 2)
@@ -1428,16 +1496,16 @@ void menu_function()
 				menu_wait = 0x0007FFFF;
 			}
 			else if (menu_pos == 3)
-			{ 
-				if (nes_hack_vsync_flag == 0) { nes_hack_sprite_priority = 1; nes_hack_vsync_flag = 1; nes_hack_border_shrink = 1; }
-				else if (nes_hack_vsync_flag == 1) { nes_hack_sprite_priority = 0; nes_hack_vsync_flag = 0; nes_hack_border_shrink = 0; }
-				menu_wait = 0x0007FFFF;
-			}
-			else if (menu_pos == 4)
 			{
 				if (controller_mapping == 0) controller_mapping = 1;
 				else if (controller_mapping == 1) controller_mapping = 2;
 				else controller_mapping = 0;
+				menu_wait = 0x0007FFFF;
+			}
+			else if (menu_pos == 4)
+			{ 
+				if (nes_hack_vsync_flag == 0) { nes_hack_sprite_priority = 1; nes_hack_vsync_flag = 1; nes_hack_border_shrink = 1; }
+				else if (nes_hack_vsync_flag == 1) { nes_hack_sprite_priority = 0; nes_hack_vsync_flag = 0; nes_hack_border_shrink = 0; }
 				menu_wait = 0x0007FFFF;
 			}
 			else if (menu_pos == 5)
@@ -1526,7 +1594,10 @@ void menu_function()
 
 			nes_init();
 		}
-		else // GB?
+		else if (cart_rom[0x0104] == 0xCE &&
+			cart_rom[0x0105] == 0xED &&
+			cart_rom[0x0106] == 0x66 &&
+			cart_rom[0x0107] == 0x66) // GB
 		{
 			if (menu_pos == 0)
 			{
@@ -1538,6 +1609,7 @@ void menu_function()
 				screen_clear();
 				audio_clear();
 				lcd_init();
+				if (screen_handheld == 0) { Display(); screen_clear(); }
 				menu_loop = 0;
 			}
 			else if (menu_pos == 2)
@@ -1551,16 +1623,16 @@ void menu_function()
 			}
 			else if (menu_pos == 3)
 			{
-				palette_num++;
-				if (palette_num >= 16) palette_num = 0;
-				auto_assign_palette(0, palette_num);
+				if (controller_mapping == 0) controller_mapping = 1;
+				else if (controller_mapping == 1) controller_mapping = 2;
+				else controller_mapping = 0;
 				menu_wait = 0x0007FFFF;
 			}
 			else if (menu_pos == 4)
 			{
-				if (controller_mapping == 0) controller_mapping = 1;
-				else if (controller_mapping == 1) controller_mapping = 2;
-				else controller_mapping = 0;
+				palette_num++;
+				if (palette_num >= 16) palette_num = 0;
+				auto_assign_palette(0, palette_num);
 				menu_wait = 0x0007FFFF;
 			}
 			else if (menu_pos == 5)
@@ -1590,6 +1662,76 @@ void menu_function()
 			else if (menu_pos == 8)
 			{
 				gb_write_cart_ram_file("GAME-F.SAV");
+
+				reset_check = 0;
+
+				menu_loop = 0;
+			}
+		}
+		else // SEGA
+		{
+			if (menu_pos == 0)
+			{
+				menu_loop = 0;
+			}
+			else if (menu_pos == 1)
+			{
+				screen_handheld = 1 - screen_handheld;
+				screen_clear();
+				audio_clear();
+				lcd_init();
+				if (screen_handheld == 0) { Display(); screen_clear(); }
+				menu_loop = 0;
+			}
+			else if (menu_pos == 2)
+			{
+				if (audio_volume == 0) { audio_enable = 1; audio_volume = 1; }
+				else if (audio_volume == 1) { audio_enable = 1; audio_volume = 2; }
+				else if (audio_volume == 2) { audio_enable = 1; audio_volume = 3; }
+				else if (audio_volume == 3) { audio_enable = 1; audio_volume = 4; }
+				else if (audio_volume == 4) { audio_enable = 0; audio_volume = 0; }
+				menu_wait = 0x0007FFFF;
+			}
+			else if (menu_pos == 3)
+			{
+				if (controller_mapping == 0) controller_mapping = 1;
+				else if (controller_mapping == 1) controller_mapping = 2;
+				else controller_mapping = 0;
+				menu_wait = 0x0007FFFF;
+			}
+			else if (menu_pos == 4)
+			{
+				if (button_disable == 0) button_disable = 1;
+				else button_disable = 0;
+				menu_wait = 0x0007FFFF;
+			}
+			else if (menu_pos == 5)
+			{
+				gb_read_cart_ram_file("GAME-G.SAV");
+
+				reset_check = 1;
+
+				menu_loop = 0;
+			}
+			else if (menu_pos == 6)
+			{
+				gb_read_cart_ram_file("GAME-H.SAV");
+
+				reset_check = 1;
+
+				menu_loop = 0;
+			}
+			else if (menu_pos == 7)
+			{
+				gb_write_cart_ram_file("GAME-G.SAV");
+
+				reset_check = 0;
+
+				menu_loop = 0;
+			}
+			else if (menu_pos == 8)
+			{
+				gb_write_cart_ram_file("GAME-H.SAV");
 
 				reset_check = 0;
 
@@ -1634,6 +1776,7 @@ volatile void __attribute__((vector(_CHANGE_NOTICE_K_VECTOR),interrupt(ipl1srs),
 			audio_clear();
 
 			lcd_init();
+			if (screen_handheld == 0) { Display(); screen_clear(); }
 
 			screen_redraw = 1;
 
@@ -1648,14 +1791,21 @@ volatile void __attribute__((vector(_CHANGE_NOTICE_K_VECTOR),interrupt(ipl1srs),
 	return;
 }
 
-void game_loop()
+void game_loop(unsigned char override)
 {
-	if (cart_rom[0] == 0x4E && // N
+	while (!(controller_status_1 == 0x00 &&
+		controller_status_2 == 0x00 &&
+		controller_status_3 == 0x00 &&
+		controller_status_4 == 0x00)) { }
+	
+	screen_menu = 0;
+	
+	DelayMS(1000);
+	
+	if ((cart_rom[0] == 0x4E && // N
 		cart_rom[1] == 0x45 && // E
-		cart_rom[2] == 0x53) // S
+		cart_rom[2] == 0x53) || override == 1) // S
 	{
-		screen_menu = 0;
-		
 		controller_config = 2; // start with 2 players
 		
 		nes_timers();
@@ -1674,15 +1824,48 @@ void game_loop()
 			nes_loop(screen_rate); // frame rate divider and external interrupt
 		}
 	}
-	else // GB?
+	else if ((cart_rom[0x0104] == 0xCE &&
+		cart_rom[0x0105] == 0xED &&
+		cart_rom[0x0106] == 0x66 &&
+		cart_rom[0x0107] == 0x66) || override == 2) // GB
 	{
-		screen_menu = 0;
-		
 		controller_config = 1; // only one player
-	
-		DelayMS(1000);
 		
 		PeanutGB();
+	}
+	else if ((cart_rom[0x7FF4] == 0x53 &&
+		cart_rom[0x7FF5] == 0x45 &&
+		cart_rom[0x7FF6] == 0x47 &&
+		cart_rom[0x7FF7] == 0x41) ||
+		(override == 3 || override == 4)) // SEGA
+	{
+		if (((cart_rom[0x7FFF] & 0xF0) == 0x30 ||
+			(cart_rom[0x7FFF] & 0xF0) == 0x40) || override == 3)  // SMS
+		{
+			controller_config = 2; // two players
+		
+			TotalSMS(0); // SMS
+		}
+		else if (((cart_rom[0x7FFF] & 0xF0) == 0x50 ||
+			(cart_rom[0x7FFF] & 0xF0) == 0x60 ||
+			(cart_rom[0x7FFF] & 0xF0) == 0x70) || override == 4) // GG
+		{
+			controller_config = 1; // one player
+
+			TotalSMS(1); // GG
+		}
+		else
+		{
+			controller_config = 2; // two players
+
+			TotalSMS(2); // try SG-1000?
+		}
+	}
+	else 
+	{
+		controller_config = 2; // two players
+
+		TotalSMS(2); // try SG-1000?
 	}
 }
 
@@ -1706,6 +1889,7 @@ int main()
 	screen_menu = 1;
 	
 	Setup();
+	Display();
 	
 	screen_clear();
 	audio_clear();
@@ -1807,15 +1991,53 @@ int main()
 				(controller_status_3 & 0x08) == 0x08 ||
 				(controller_status_4 & 0x08) == 0x08)
 			{
-				cart_rom = (volatile unsigned char *)0x9D0F0000; // change cart_rom to pack-in-game
-				
-				audio_enable = 1; // audio on by default
-				controller_enable = 1; // must be on to play games
-				
 				screen_clear();
 				audio_clear();
 				
-				game_loop();
+				audio_enable = 1; // audio on by default
+				controller_enable = 1; // must be on to play games
+
+				if (((controller_status_1 & 0x01) == 0x01 && (controller_status_1 & 0x02) == 0x02) || 
+					((controller_status_2 & 0x01) == 0x01 && (controller_status_2 & 0x02) == 0x02) || 
+					((controller_status_3 & 0x01) == 0x01 && (controller_status_3 & 0x02) == 0x02) || 
+					((controller_status_4 & 0x01) == 0x01 && (controller_status_4 & 0x02) == 0x02))
+				{
+					cart_rom = (volatile unsigned char *)0x9D0F0000; // change cart_rom to pack-in-game
+				}
+
+				if ((controller_status_1 & 0x04) == 0x04 || 
+					(controller_status_2 & 0x04) == 0x04 || 
+					(controller_status_3 & 0x04) == 0x04 || 
+					(controller_status_4 & 0x04) == 0x04)
+				{
+					menu_function(); // go to menu immediately if holding select
+				}
+				
+				if ((controller_status_1 & 0x10) == 0x10 ||
+					(controller_status_2 & 0x10) == 0x10 ||
+					(controller_status_3 & 0x10) == 0x10 ||
+					(controller_status_4 & 0x10) == 0x10) // UP, GB override
+				{
+					game_loop(2);
+				}
+				else if ((controller_status_1 & 0x40) == 0x40 ||
+					(controller_status_2 & 0x40) == 0x40 ||
+					(controller_status_3 & 0x40) == 0x40 ||
+					(controller_status_4 & 0x40) == 0x40) // LEFT, SMS override
+				{
+					game_loop(3);
+				}
+				else if ((controller_status_1 & 0x80) == 0x80 ||
+					(controller_status_2 & 0x80) == 0x80 ||
+					(controller_status_3 & 0x80) == 0x80 ||
+					(controller_status_4 & 0x80) == 0x80) // RIGHT, GG override
+				{
+					game_loop(4);
+				}
+				else
+				{
+					game_loop(0); // check rom header to decide
+				}
 			}
 		}
 	}
@@ -2022,7 +2244,31 @@ int main()
 				menu_function(); // go to menu immediately if holding select
 			}
 			
-			game_loop();
+			if ((controller_status_1 & 0x10) == 0x10 ||
+				(controller_status_2 & 0x10) == 0x10 ||
+				(controller_status_3 & 0x10) == 0x10 ||
+				(controller_status_4 & 0x10) == 0x10) // UP, GB override
+			{
+				game_loop(2);
+			}
+			else if ((controller_status_1 & 0x40) == 0x40 ||
+				(controller_status_2 & 0x40) == 0x40 ||
+				(controller_status_3 & 0x40) == 0x40 ||
+				(controller_status_4 & 0x40) == 0x40) // LEFT, SMS override
+			{
+				game_loop(3);
+			}
+			else if ((controller_status_1 & 0x80) == 0x80 ||
+				(controller_status_2 & 0x80) == 0x80 ||
+				(controller_status_3 & 0x80) == 0x80 ||
+				(controller_status_4 & 0x80) == 0x80) // RIGHT, GG override
+			{
+				game_loop(4);
+			}
+			else
+			{
+				game_loop(0); // check rom header to decide
+			}
 		}
 		else if (menu_pos == 0 && directory_root == 0) // return to root folder
 		{
