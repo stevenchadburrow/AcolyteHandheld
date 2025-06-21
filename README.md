@@ -64,7 +64,7 @@ Supports GBC palettes and game save files<br>
 <a href="https://www.aidanmocke.com/">https://www.aidanmocke.com/</a> for a bunch of PIC32MZ projects (without Harmony), including USB.<br>
 <a href="http://elm-chan.org/">http://elm-chan.org/</a> for a bunch of projects, including MMC (aka TF Card) and FatFs.<br>
 <a href="https://github.com/deltabeard/">https://github.com/deltabeard/</a> for a bunch of projects, including Peanut-GB and MiniGB-APU projects.<br>
-<a href="https://hackaday.com/2025/06/19/game-boy-nes-why-not-both/"</a> for the Hack-A-Day article!<br>
+<a href="https://hackaday.com/2025/06/19/game-boy-nes-why-not-both/">https://hackaday.com/2025/06/19/game-boy-nes-why-not-both/</a> for the Hack-A-Day article!<br>
 
 
 <img src="HandheldPIC32-Image1.jpg">
