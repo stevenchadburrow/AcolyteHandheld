@@ -1,6 +1,6 @@
 # Acolyte Handheld
 
-The Acolyte Handheld is a portable PIC32MZ based game console.  It is programmed with my own homebrew NES emulator, as well as the <a href="https://github.com/deltabeard/Peanut-GB">Peanut-GB Emulator</a>.  Most of the code is derived from my previous project <a href="https://github.com/stevenchadburrow/AcolyteHandPICd32">here</a>.<br>
+The Acolyte Handheld is a portable PIC32MZ based game console.  It is programmed with my own homebrew NES emulator, as well as the <a href="https://github.com/deltabeard/Peanut-GB">Peanut-GB Emulator</a> as well as the <a href="https://github.com/ITotalJustice/TotalSMS">TotalSMS Emulator</a>.  Most of the code is derived from my previous project <a href="https://github.com/stevenchadburrow/AcolyteHandPICd32">here</a>.<br>
 
 <b>Features</b>
 
@@ -10,6 +10,7 @@ The Acolyte Handheld is a portable PIC32MZ based game console.  It is programmed
   <li>Supports four players simultaneously through the use of additional controllers.</li>
   <li>The built-in NES emulator has been tested with over 120+ games at this point, including but not limited to the list <a href="https://github.com/stevenchadburrow/AcolyteHandPICd32/tree/main/NES">here</a>.  As a benchmark, Super Mario Bros 3 currently runs about 5% too slow when at 20 FPS, though most games run at full speed.  My demo video of Super Mario Bros 3 can be found <a href="https://www.youtube.com/watch?v=WGrEMQLWrP4">here</a>.</li>
   <li>The imported GB emulator is very accurate and runs games at full speed.</li>
+  <li>The imported SMS/GG/SG emulator is very accurate and runs games at full speed.</li>
   <li>Custom built 3D printed enclosure and buttons.</li>
 </ul>
 
@@ -24,6 +25,9 @@ VGA 1024x768 resolution at 60 Hz with 256 colors or 65K colors<br>
 ILI9341 LCD 320x240 resolution with 65K colors<br>
 Effective resolution of NES emulator at 256x240, 3x integer scaled on VGA<br>
 Effective resolution of GB emulator at 160x144, 3x integer scaled on VGA<br>
+Effective resolution of SMS emulator at 256x192, 3x integer scaled on VGA<br>
+Effective resolution of GG emulator at 160x144, 3x integer scaled on VGA<br>
+Effective resolution of SG emulator at 256x192, 3x integer scaled on VGA<br>
 
 <b>Audio</b>
 
@@ -57,6 +61,11 @@ Supports settings adjustments, game save files, and save-states<br>
 Mahyar Koshkouei's <a href="https://github.com/deltabeard/Peanut-GB">Peanut-GB (with MiniGB-APU) Emulator</a><br>
 Supports GBC palettes and game save files<br>
 
+<b>SMS/GG/SG Emulator</b>
+
+ITotalJustice's <a href="https://github.com/ITotalJustice/TotalSMS">TotalSMS Emulator</a><br>
+Supports SMS / GG / SB games on same emulator, with game save files<br>
+
 <b>Links</b>
 
 <a href="http://forum.6502.org/">http://forum.6502.org/</a> for the 6502 Forum, an incredible resource for everything 6502 related.<br>
@@ -64,6 +73,7 @@ Supports GBC palettes and game save files<br>
 <a href="https://www.aidanmocke.com/">https://www.aidanmocke.com/</a> for a bunch of PIC32MZ projects (without Harmony), including USB.<br>
 <a href="http://elm-chan.org/">http://elm-chan.org/</a> for a bunch of projects, including MMC (aka TF Card) and FatFs.<br>
 <a href="https://github.com/deltabeard/">https://github.com/deltabeard/</a> for a bunch of projects, including Peanut-GB and MiniGB-APU projects.<br>
+<a href="https://github.com/ITotalJustice">https://github.com/ITotalJustice</a> for a bunch of projects, including TotalSMS and other emulators.<br>
 <a href="https://hackaday.com/2025/06/19/game-boy-nes-why-not-both/">https://hackaday.com/2025/06/19/game-boy-nes-why-not-both/</a> for the Hack-A-Day article!<br>
 
 
