@@ -2094,14 +2094,7 @@ int main()
 					menu_function(); // go to menu immediately if holding select
 				}
 				
-				if ((controller_status_1 & 0x10) == 0x10 ||
-					(controller_status_2 & 0x10) == 0x10 ||
-					(controller_status_3 & 0x10) == 0x10 ||
-					(controller_status_4 & 0x10) == 0x10) // UP, GB override
-				{
-					game_loop(2);
-				}
-				else if ((controller_status_1 & 0x40) == 0x40 ||
+				if ((controller_status_1 & 0x40) == 0x40 ||
 					(controller_status_2 & 0x40) == 0x40 ||
 					(controller_status_3 & 0x40) == 0x40 ||
 					(controller_status_4 & 0x40) == 0x40) // LEFT, SMS override
