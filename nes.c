@@ -6,6 +6,7 @@
 // Written by: Professor Steven Chad Burrow
 
 
+
 // if using for other platforms, adjust variable types here
 // 'volatile' seems to keep it from getting general exception errors
 // but it also slows down the whole system!
@@ -3381,6 +3382,9 @@ void nes_border()
 {	
 	if (screen_handheld == 0)
 	{
+		screen_fill((unsigned short)nes_palette_single[(pal_ram[0x00]&0x3F)], 1);
+		
+		/*
 		unsigned char pixel_color = nes_palette_single[(pal_ram[0x00]&0x3F)];
 		
 		if (nes_hack_border_shrink > 0)
@@ -3403,9 +3407,13 @@ void nes_border()
 				}
 			}
 		}
+		*/
 	}
 	else
 	{
+		screen_fill((unsigned short)nes_palette_double[(pal_ram[0x00]&0x3F)], 2);
+		
+		/*
 		unsigned short pixel_color = nes_palette_double[(pal_ram[0x00]&0x3F)];
 		
 		if (nes_hack_border_shrink > 0)
@@ -3428,6 +3436,7 @@ void nes_border()
 				}
 			}
 		}
+		*/
 	}
 }
 
@@ -5454,9 +5463,9 @@ void nes_init()
 void nes_loop(unsigned long loop_count)
 {	
 	cpu_current_cycles = 0;
-
-	cpu_current_cycles += cpu_run();
 	
+	cpu_current_cycles += cpu_run();
+
 	cpu_current_cycles += cpu_dma_cycles;
 	
 	cpu_dma_cycles = 0;
@@ -5488,7 +5497,7 @@ void nes_loop(unsigned long loop_count)
 			}
 			
 			if (ppu_frame_count >= loop_count)
-			{					
+			{		
 				nes_background(ppu_tile_count, ppu_scanline_count);
 			}
 			
@@ -5635,7 +5644,7 @@ void nes_loop(unsigned long loop_count)
 		if (ppu_status_v == 0x0001)
 		{	
 			nes_sprite_0_calc();
-
+		
 			if (ppu_frame_count >= loop_count)
 			{	
 				nes_border();

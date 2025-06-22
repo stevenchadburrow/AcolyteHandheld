@@ -297,6 +297,14 @@ void __attribute__((optimize("O0"))) Display()
 	IFS4bits.DMA2IF = 0; // clear flags
 	IEC4bits.DMA3IE = 1; // enable interrupts
 	IFS4bits.DMA3IF = 0; // clear flags
+	IEC4bits.DMA4IE = 0; // disable interrupts
+	IFS4bits.DMA4IF = 0; // clear flags
+	IEC4bits.DMA5IE = 0; // disable interrupts
+	IFS4bits.DMA5IF = 0; // clear flags
+	IEC4bits.DMA6IE = 0; // disable interrupts
+	IFS4bits.DMA6IF = 0; // clear flags
+	IEC4bits.DMA7IE = 0; // disable interrupts
+	IFS4bits.DMA7IF = 0; // clear flags
 	IPC34bits.DMA3IP = 0x6; // interrupt priority level 6
 	IPC34bits.DMA3IS = 0x0; // interrupt sub-priority level 0
 	DMACONbits.ON = 1; // enable the DMA controller
@@ -350,7 +358,7 @@ void __attribute__((optimize("O0"))) Display()
 	DCH2DSIZ = 1; // dst size 
 	DCH2CSIZ = 1; // 1 byte per event
 	
-	
+	// for LCD
 	DCH3CONbits.CHEN = 0; // disable channel
 	DCH3ECONbits.CHSIRQ = 128; // start on PMP complete
 	DCH3ECONbits.CHAIRQ = 129; // abort on PMP error
@@ -367,6 +375,66 @@ void __attribute__((optimize("O0"))) Display()
 	DCH3DSIZ = 1; // dst size 
 	DCH3CSIZ = 1; // bytes per event
 	
+	// for flood fill function
+	DCH4CONbits.CHEN = 0; // disable channel
+	DCH4ECONbits.CHSIRQ = 19; // start on Timer 4?
+	DCH4ECONbits.CHAIRQ = 0; // disable abort int
+	DCH4ECONbits.SIRQEN = 1; // enable start interrupt
+	DCH4INT = 0x0000; // clear all interrupts
+	DCH1INTbits.CHBCIF = 0; // clear transfer complete flag
+	DCH1INTbits.CHBCIE = 1; // enable transfer complete interrupt
+	DCH4CONbits.CHCHN = 0; // disallow chaining
+	DCH4CONbits.CHCHNS = 0; // chain from higher channel
+	DCH4CONbits.CHAED = 1; // detect when disabled
+	DCH4CONbits.CHPRI = 0x2; // somewhat high priority
+	DCH4SSIZ = 1; // source size
+	DCH4DSIZ = (SCREEN_X*SCREEN_Y >> 2); // dst size 
+	DCH4CSIZ = (SCREEN_X*SCREEN_Y >> 2); // bytes per event
+	
+	DCH5CONbits.CHEN = 0; // disable channel
+	DCH5ECONbits.CHSIRQ = 19; // start on Timer 4?
+	DCH5ECONbits.CHAIRQ = 0; // disable abort int
+	DCH5ECONbits.SIRQEN = 1; // enable start interrupt
+	DCH5INT = 0x0000; // clear all interrupts
+	DCH1INTbits.CHBCIF = 0; // clear transfer complete flag
+	DCH1INTbits.CHBCIE = 1; // enable transfer complete interrupt
+	DCH5CONbits.CHCHN = 1; // allow chaining
+	DCH5CONbits.CHCHNS = 0; // chain from higher channel
+	DCH5CONbits.CHAED = 1; // detect when disabled
+	DCH5CONbits.CHPRI = 0x2; // somewhat high priority
+	DCH5SSIZ = 1; // source size
+	DCH5DSIZ = (SCREEN_X*SCREEN_Y >> 2); // dst size 
+	DCH5CSIZ = (SCREEN_X*SCREEN_Y >> 2); // bytes per event
+	
+	DCH6CONbits.CHEN = 0; // disable channel
+	DCH6ECONbits.CHSIRQ = 19; // start on Timer 4?
+	DCH6ECONbits.CHAIRQ = 0; // disable abort int
+	DCH6ECONbits.SIRQEN = 1; // enable start interrupt
+	DCH6INT = 0x0000; // clear all interrupts
+	DCH1INTbits.CHBCIF = 0; // clear transfer complete flag
+	DCH1INTbits.CHBCIE = 1; // enable transfer complete interrupt
+	DCH6CONbits.CHCHN = 1; // allow chaining
+	DCH6CONbits.CHCHNS = 0; // chain from higher channel
+	DCH6CONbits.CHAED = 1; // detect when disabled
+	DCH6CONbits.CHPRI = 0x2; // somewhat high priority
+	DCH6SSIZ = 1; // source size
+	DCH6DSIZ = (SCREEN_X*SCREEN_Y >> 2); // dst size 
+	DCH6CSIZ = (SCREEN_X*SCREEN_Y >> 2); // bytes per event
+	
+	DCH7CONbits.CHEN = 0; // disable channel
+	DCH7ECONbits.CHSIRQ = 19; // start on Timer 4?
+	DCH7ECONbits.CHAIRQ = 0; // disable abort int
+	DCH7ECONbits.SIRQEN = 1; // enable start interrupt
+	DCH7INT = 0x0000; // clear all interrupts
+	DCH1INTbits.CHBCIF = 0; // clear transfer complete flag
+	DCH1INTbits.CHBCIE = 1; // enable transfer complete interrupt
+	DCH7CONbits.CHCHN = 1; // allow chaining
+	DCH7CONbits.CHCHNS = 0; // chain from higher channel
+	DCH7CONbits.CHAED = 1; // detect when disabled
+	DCH7CONbits.CHPRI = 0x2; // somewhat high priority
+	DCH7SSIZ = 1; // source size
+	DCH7DSIZ = (SCREEN_X*SCREEN_Y >> 2); // dst size 
+	DCH7CSIZ = (SCREEN_X*SCREEN_Y >> 2); // bytes per event
 	
 	// default to black screen
 	PORTH = 0;

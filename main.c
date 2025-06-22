@@ -472,6 +472,7 @@ volatile unsigned char __attribute__((coherent,address(0x8006A000))) screen_line
 volatile unsigned char screen_frame = 0;
 volatile unsigned int screen_scanline = 771; //1025; // start of vertical sync
 volatile unsigned char __attribute__((coherent)) screen_zero[2] = { 0x00, 0x00 }; // zero value for black
+volatile unsigned char __attribute__((coherent)) screen_fill_color[2] = { 0x00, 0x00 }; // used in flood-fill function
 volatile unsigned char screen_handheld = 0; // 0 = VGA, 1 = LCD
 volatile unsigned char screen_rate = 3; // 3:1 frame rate
 volatile unsigned char screen_redraw = 0;
@@ -925,6 +926,72 @@ void screen_clear()
 			screen_buffer[i] = (unsigned char)((screen_clear_double & 0xFF00) >> 8);
 			screen_buffer[i+1] = (unsigned char)((screen_clear_double & 0x00FF));
 		}
+	}
+}
+
+void screen_fill(unsigned short color, unsigned char bytes)
+{
+	if (bytes == 1)
+	{
+		screen_fill_color[0] = (color & 0x00FF);
+
+		DCH4INTbits.CHBCIF = 0;
+		DCH4SSA = VirtToPhys(screen_fill_color);
+		DCH4DSA = VirtToPhys(screen_buffer + SCREEN_XY*(1-screen_frame));
+		DCH4SSIZ = 1; // source size
+		DCH4DSIZ = (SCREEN_X*SCREEN_Y >> 2); // dst size 
+		DCH4CSIZ = (SCREEN_X*SCREEN_Y >> 2); // bytes per event
+
+		DCH5CONbits.CHCHN = 1; // allow chaining
+		DCH5INTbits.CHBCIF = 0;
+		DCH5SSA = VirtToPhys(screen_fill_color);
+		DCH5DSA = VirtToPhys(screen_buffer + SCREEN_XY*(1-screen_frame) + (SCREEN_X*SCREEN_Y >> 2));
+		DCH5SSIZ = 1; // source size
+		DCH5DSIZ = (SCREEN_X*SCREEN_Y >> 2); // dst size 
+		DCH5CSIZ = (SCREEN_X*SCREEN_Y >> 2); // bytes per event
+
+		DCH6CONbits.CHCHN = 1; // allow chaining
+		DCH6INTbits.CHBCIF = 0;
+		DCH6SSA = VirtToPhys(screen_fill_color);
+		DCH6DSA = VirtToPhys(screen_buffer + SCREEN_XY*(1-screen_frame) + 2*(SCREEN_X*SCREEN_Y >> 2));
+		DCH6SSIZ = 1; // source size
+		DCH6DSIZ = (SCREEN_X*SCREEN_Y >> 2); // dst size 
+		DCH6CSIZ = (SCREEN_X*SCREEN_Y >> 2); // bytes per event
+
+		DCH7CONbits.CHCHN = 1; // allow chaining
+		DCH7INTbits.CHBCIF = 0;
+		DCH7SSA = VirtToPhys(screen_fill_color);
+		DCH7DSA = VirtToPhys(screen_buffer + SCREEN_XY*(1-screen_frame) + 3*(SCREEN_X*SCREEN_Y >> 2));
+		DCH7SSIZ = 1; // source size
+		DCH7DSIZ = (SCREEN_X*SCREEN_Y >> 2); // dst size 
+		DCH7CSIZ = (SCREEN_X*SCREEN_Y >> 2); // bytes per event
+	
+		DCH4CONbits.CHEN = 1; // enable channel
+	}
+	else if (bytes == 2)
+	{
+		screen_fill_color[0] = ((color & 0xFF00) >> 8);
+		screen_fill_color[1] = ((color & 0x00FF));
+
+		DCH4INTbits.CHBCIF = 0;
+		DCH4SSA = VirtToPhys(screen_fill_color);
+		DCH4DSA = VirtToPhys(screen_buffer + SCREEN_XY*(1-screen_frame));
+		DCH4SSIZ = 2; // source size
+		DCH4DSIZ = (254*240); // dst size 
+		DCH4CSIZ = (254*240); // bytes per event
+
+		DCH5CONbits.CHCHN = 1; // allow chaining
+		DCH5INTbits.CHBCIF = 0;
+		DCH5SSA = VirtToPhys(screen_fill_color);
+		DCH5DSA = VirtToPhys(screen_buffer + SCREEN_XY*(1-screen_frame) + (254*240));
+		DCH5SSIZ = 2; // source size
+		DCH5DSIZ = (254*242); // dst size 
+		DCH5CSIZ = (254*242); // bytes per event
+	
+		DCH6CONbits.CHCHN = 0; // disallow chaining
+		DCH7CONbits.CHCHN = 0; // disallow chaining
+		
+		DCH4CONbits.CHEN = 1; // enable channel
 	}
 }
 
@@ -1504,8 +1571,18 @@ void menu_function()
 			}
 			else if (menu_pos == 4)
 			{ 
-				if (nes_hack_vsync_flag == 0) { nes_hack_sprite_priority = 1; nes_hack_vsync_flag = 1; nes_hack_border_shrink = 1; }
-				else if (nes_hack_vsync_flag == 1) { nes_hack_sprite_priority = 0; nes_hack_vsync_flag = 0; nes_hack_border_shrink = 0; }
+				if (nes_hack_vsync_flag == 0)
+				{
+					nes_hack_sprite_priority = 1;
+					nes_hack_vsync_flag = 1;
+					nes_hack_border_shrink = 0; // always disable
+				}
+				else if (nes_hack_vsync_flag == 1)
+				{
+					nes_hack_sprite_priority = 0;
+					nes_hack_vsync_flag = 0;
+					nes_hack_border_shrink = 0; // always disable
+				}
 				menu_wait = 0x0007FFFF;
 			}
 			else if (menu_pos == 5)
