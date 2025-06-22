@@ -5357,7 +5357,7 @@ static void vdp_render_frame(struct SMS_Core* sms)
 		return;
 	}
 	
-	if (frame_tally == 1) // every two frames
+	if (frame_tally == 2) // every three frames
 	{
 		struct PriorityBuf prio = {0};
 		pixel_width_t scanline[SMS_SCREEN_WIDTH] = {0};
@@ -5705,7 +5705,7 @@ void TotalSMS(unsigned char type)
 
 		SMS_run(&sms, SMS_CYCLES_PER_FRAME);
 
-		if (frame_tally == 2) // only draw every two frames
+		if (frame_tally == 3) // only draw every three frames
 		{
 			frame_tally = 0;
 			screen_flip();
