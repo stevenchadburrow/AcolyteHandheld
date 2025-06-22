@@ -1843,6 +1843,7 @@ void game_loop(unsigned char override)
 			(cart_rom[0x7FFF] & 0xF0) == 0x40) || override == 3)  // SMS
 		{
 			controller_config = 2; // two players
+			button_disable = 1; // disable pause/reset by default
 		
 			TotalSMS(0); // SMS
 		}
@@ -1851,12 +1852,14 @@ void game_loop(unsigned char override)
 			(cart_rom[0x7FFF] & 0xF0) == 0x70) || override == 4) // GG
 		{
 			controller_config = 1; // one player
+			button_disable = 0; // enable pause/reset by default
 
 			TotalSMS(1); // GG
 		}
 		else
 		{
 			controller_config = 2; // two players
+			button_disable = 1; // disable pause/reset by default
 
 			TotalSMS(2); // try SG-1000?
 		}
@@ -1864,6 +1867,7 @@ void game_loop(unsigned char override)
 	else 
 	{
 		controller_config = 2; // two players
+		button_disable = 1; // disable pause/reset by default
 
 		TotalSMS(2); // try SG-1000?
 	}
