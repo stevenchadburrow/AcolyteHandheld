@@ -985,8 +985,8 @@ void screen_fill(unsigned short color, unsigned char bytes)
 		DCH5SSA = VirtToPhys(screen_fill_color);
 		DCH5DSA = VirtToPhys(screen_buffer + SCREEN_XY*(1-screen_frame) + (254*240));
 		DCH5SSIZ = 2; // source size
-		DCH5DSIZ = (254*242); // dst size 
-		DCH5CSIZ = (254*242); // bytes per event
+		DCH5DSIZ = (254*244); // dst size 
+		DCH5CSIZ = (254*244); // bytes per event
 	
 		DCH6CONbits.CHCHN = 0; // disallow chaining
 		DCH7CONbits.CHCHN = 0; // disallow chaining
