@@ -5409,10 +5409,11 @@ void nes_sprite_0_calc()
 
 void nes_init()
 {
+	prg_ram = sys_ram + 0x0000; // cpu ram from 0x6000 to 0x7FFF (if used)
+	
 	cpu_ram = ext_ram + 0x0000; // only cpu ram from 0x0000 to 0x07FF
 	ppu_ram = ext_ram + 0x0800; // ppu ram from 0x2000 to 0x2FFF (halved, mirrored)
-	prg_ram = ext_ram + 0x1000; // cpu ram from 0x6000 to 0x7FFF (if used)
-	chr_ram = ext_ram + 0x2000; // ppu ram from 0x0000 to 0x1FFF (if used)
+	chr_ram = ext_ram + 0x1000; // ppu ram from 0x0000 to 0x1FFF (if used)
 	
 	if (nes_init_flag == 0)
 	{

@@ -455,7 +455,7 @@ void _general_exception_handler(void)
 
 
 volatile unsigned char *cart_rom = (volatile unsigned char *)0x9D100000;
-volatile unsigned char __attribute__((address(0x8006E000))) sys_ram[8192]; // used for TotalSMS
+volatile unsigned char __attribute__((address(0x8006E000))) sys_ram[8192]; // used for NES and TotalSMS
 volatile unsigned char __attribute__((address(0x80070000))) cart_ram[32768]; // used as normal ram for PeanutGB and TotalSMS
 volatile unsigned char __attribute__((address(0x80078000))) ext_ram[32768]; // used for pointing memory address for NES, GB, and SMS
 
