@@ -41,6 +41,14 @@
 # define __has_include(x) 0
 #endif
 
+volatile uint8_t __attribute__((coherent)) scanline_pixels1[160] = {0};
+volatile uint8_t __attribute__((coherent)) scanline_pixels2[160] = {0};
+volatile uint8_t scanline_scaled = 1; // default to 1.5x scale
+volatile uint8_t scanline_toggle = 0;
+volatile uint8_t scanline_count = 0;
+volatile uint8_t scanline_draw = 0;
+volatile uint8_t scanline_sync = 0;
+
 #include <stdlib.h>	/* Required for qsort and abort */
 #include <stdbool.h>	/* Required for bool types */
 #include <stdint.h>	/* Required for int types */
@@ -652,8 +660,10 @@ struct gb_s
 		 * guaranteed to be between 0-144 inclusive.
 		 */
 		void (*lcd_draw_line)(struct gb_s *gb,
-				const uint8_t *pixels,
-				const uint_fast8_t line);
+				//const uint8_t *pixels1,
+                //const uint8_t *pixels2,
+				const uint_fast8_t line
+        );
 
 		/* Palettes */
 		uint8_t bg_palette[4];
@@ -1407,8 +1417,6 @@ static int compare_sprites(const void *in1, const void *in2)
 
 void __gb_draw_line(struct gb_s *gb)
 {
-	uint8_t pixels[160] = {0};
-
 	/* If LCD not initialised by front-end, don't render anything. */
 	if(gb->display.lcd_draw_line == NULL)
 		return;
@@ -1434,6 +1442,28 @@ void __gb_draw_line(struct gb_s *gb)
 			return;
 		}
 	}
+    
+    if (scanline_sync == 1)
+    {
+        scanline_sync = 0;
+        scanline_count = 0;
+        scanline_toggle = 0;
+    }
+    
+    if (scanline_draw == 0)
+    {
+        /* draw window */
+        if(gb->hram_io[IO_LCDC] & LCDC_WINDOW_ENABLE
+                && gb->hram_io[IO_LY] >= gb->display.WY
+                && gb->hram_io[IO_WX] <= 166)
+        {
+			gb->display.window_clear++;
+        }
+        
+        return;
+    }
+    
+    if (scanline_scaled == 0) scanline_toggle = 0;
 
 	/* If background is enabled, draw it. */
 	if(gb->hram_io[IO_LCDC] & LCDC_BG_ENABLE)
@@ -1504,10 +1534,22 @@ void __gb_draw_line(struct gb_s *gb)
 
 			/* copy background */
 			c = (t1 & 0x1) | ((t2 & 0x1) << 1);
-			pixels[disp_x] = gb->display.bg_palette[c];
+            
+            if (scanline_toggle == 0)
+            {
+                scanline_pixels1[disp_x] = gb->display.bg_palette[c];
 #if PEANUT_GB_12_COLOUR
-			pixels[disp_x] |= LCD_PALETTE_BG;
+                scanline_pixels1[disp_x] |= LCD_PALETTE_BG;
 #endif
+            }
+            else
+            {
+                scanline_pixels2[disp_x] = gb->display.bg_palette[c];
+#if PEANUT_GB_12_COLOUR
+                scanline_pixels2[disp_x] |= LCD_PALETTE_BG;
+#endif
+            }
+                
 			t1 = t1 >> 1;
 			t2 = t2 >> 1;
 			px++;
@@ -1572,10 +1614,21 @@ void __gb_draw_line(struct gb_s *gb)
 
 			// copy window
 			c = (t1 & 0x1) | ((t2 & 0x1) << 1);
-			pixels[disp_x] = gb->display.bg_palette[c];
+            
+            if (scanline_toggle == 0)
+            {
+                scanline_pixels1[disp_x] = gb->display.bg_palette[c];
 #if PEANUT_GB_12_COLOUR
-			pixels[disp_x] |= LCD_PALETTE_BG;
+                scanline_pixels1[disp_x] |= LCD_PALETTE_BG;
 #endif
+            }
+            else
+            {
+                scanline_pixels2[disp_x] = gb->display.bg_palette[c];
+#if PEANUT_GB_12_COLOUR
+                scanline_pixels2[disp_x] |= LCD_PALETTE_BG;
+#endif
+            }
 			t1 = t1 >> 1;
 			t2 = t2 >> 1;
 			px++;
@@ -1701,17 +1754,34 @@ void __gb_draw_line(struct gb_s *gb)
 				uint8_t c = (t1 & 0x1) | ((t2 & 0x1) << 1);
 				// check transparency / sprite overlap / background overlap
 
-				if(c && !(OF & OBJ_PRIORITY && !((pixels[disp_x] & 0x3) == gb->display.bg_palette[0])))
-				{
-					/* Set pixel colour. */
-					pixels[disp_x] = (OF & OBJ_PALETTE)
-						? gb->display.sp_palette[c + 4]
-						: gb->display.sp_palette[c];
+                if (scanline_toggle == 0)
+                {
+                    if(c && !(OF & OBJ_PRIORITY && !((scanline_pixels1[disp_x] & 0x3) == gb->display.bg_palette[0])))
+                    {
+                        /* Set pixel colour. */
+                        scanline_pixels1[disp_x] = (OF & OBJ_PALETTE)
+                            ? gb->display.sp_palette[c + 4]
+                            : gb->display.sp_palette[c];
 #if PEANUT_GB_12_COLOUR
-					/* Set pixel palette (OBJ0 or OBJ1). */
-					pixels[disp_x] |= (OF & OBJ_PALETTE);
+                        /* Set pixel palette (OBJ0 or OBJ1). */
+                        scanline_pixels1[disp_x] |= (OF & OBJ_PALETTE);
 #endif
-				}
+                    }
+                }
+                else
+                {
+                    if(c && !(OF & OBJ_PRIORITY && !((scanline_pixels2[disp_x] & 0x3) == gb->display.bg_palette[0])))
+                    {
+                        /* Set pixel colour. */
+                        scanline_pixels2[disp_x] = (OF & OBJ_PALETTE)
+                            ? gb->display.sp_palette[c + 4]
+                            : gb->display.sp_palette[c];
+#if PEANUT_GB_12_COLOUR
+                        /* Set pixel palette (OBJ0 or OBJ1). */
+                        scanline_pixels2[disp_x] |= (OF & OBJ_PALETTE);
+#endif
+                    }
+                }
 
 				t1 = t1 >> 1;
 				t2 = t2 >> 1;
@@ -1719,7 +1789,33 @@ void __gb_draw_line(struct gb_s *gb)
 		}
 	}
 
-	gb->display.lcd_draw_line(gb, pixels, gb->hram_io[IO_LY]);
+    if (scanline_toggle == 0)
+    {
+        if (scanline_scaled == 0)
+        {
+            gb->display.lcd_draw_line(gb,
+                //scanline_pixels1,
+                //scanline_pixels2,
+                gb->hram_io[IO_LY]
+            );
+        }
+        else
+        {
+            scanline_toggle = 1;
+        }
+    }
+    else
+    {
+        scanline_toggle = 0;
+        
+        gb->display.lcd_draw_line(gb,
+            //scanline_pixels1,
+            //scanline_pixels2,
+            gb->hram_io[IO_LY]
+        );
+        
+        scanline_count += 3;
+    }
 }
 #endif
 
@@ -3411,6 +3507,7 @@ void __gb_step_cpu(struct gb_s *gb)
 						!gb->display.interlace_count;
 				}
 #endif
+                scanline_sync = 1;
 			}
 			/* Normal Line */
 			else if(gb->hram_io[IO_LY] < LCD_HEIGHT)
@@ -3716,8 +3813,10 @@ const char* gb_get_rom_name(struct gb_s* gb, char *title_str)
 #if ENABLE_LCD
 void gb_init_lcd(struct gb_s *gb,
 		void (*lcd_draw_line)(struct gb_s *gb,
-			const uint8_t *pixels,
-			const uint_fast8_t line))
+			//const uint8_t *pixels1,
+            //const uint8_t *pixels2,
+			const uint_fast8_t line
+        ))
 {
 	gb->display.lcd_draw_line = lcd_draw_line;
 
@@ -3826,8 +3925,10 @@ void gb_reset(struct gb_s *gb);
 #if ENABLE_LCD
 void gb_init_lcd(struct gb_s *gb,
 		void (*lcd_draw_line)(struct gb_s *gb,
-			const uint8_t *pixels,
-			const uint_fast8_t line));
+			//const uint8_t *pixels1,
+            //const uint8_t *pixels2,
+			const uint_fast8_t line
+        ));
 #endif
 
 /**

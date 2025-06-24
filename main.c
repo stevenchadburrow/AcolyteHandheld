@@ -1002,6 +1002,11 @@ void audio_clear()
 		audio_buffer[i] = 0x00;
 		audio_buffer2[i] = 0x00;
 	}
+	
+	audio_bank = 0;
+	
+	audio_read = 0;
+	audio_write = 0;
 }
 
 
@@ -1393,38 +1398,41 @@ void menu_display()
 		else if (controller_mapping == 2) display_string(0x0048, 0x0018, "2 => 0\\");
 		else display_string(0x0048, 0x0018, "0 => 1\\");
 		
-		display_string(0x0000, 0x0020, " Palette \\");
+		if (scanline_scaled == 0) display_string(0x0000, 0x0020, " Scaling Disabled => Enabled\\");
+		else if (scanline_scaled == 1) display_string(0x0000, 0x0020, " Scaling Enabled => Disabled\\");
+		
+		display_string(0x0000, 0x0028, " Palette \\");
 		if (palette_num < 10)
 		{
-			display_character(0x0048, 0x0020, ' ');
-			display_character(0x0050, 0x0020, (char)(palette_num + '0'));
+			display_character(0x0048, 0x0028, ' ');
+			display_character(0x0050, 0x0028, (char)(palette_num + '0'));
 		}
 		else
 		{
-			display_character(0x0048, 0x0020, '1');
-			display_character(0x0050, 0x0020, (char)((palette_num % 10) + '0'));
+			display_character(0x0048, 0x0028, '1');
+			display_character(0x0050, 0x0028, (char)((palette_num % 10) + '0'));
 		}
-		display_string(0x0058, 0x0020, " => \\");
+		display_string(0x0058, 0x0028, " => \\");
 		if (palette_num >= 15)
 		{
-			display_character(0x0078, 0x0020, ' ');
-			display_character(0x0080, 0x0020, '0');
+			display_character(0x0078, 0x0028, ' ');
+			display_character(0x0080, 0x0028, '0');
 		}
 		else if (palette_num < 9)
 		{
-			display_character(0x0078, 0x0020, ' ');
-			display_character(0x0080, 0x0020, (char)((palette_num+1) + '0'));
+			display_character(0x0078, 0x0028, ' ');
+			display_character(0x0080, 0x0028, (char)((palette_num+1) + '0'));
 		}
 		else
 		{
-			display_character(0x0078, 0x0020, '1');
-			display_character(0x0080, 0x0020, (char)(((palette_num+1) % 10) + '0'));
+			display_character(0x0078, 0x0028, '1');
+			display_character(0x0080, 0x0028, (char)(((palette_num+1) % 10) + '0'));
 		}
 		
-		display_string(0x0000, 0x0028, " Load Game E\\");
-		display_string(0x0000, 0x0030, " Load Game F\\");
-		display_string(0x0000, 0x0038, " Save Game E\\");
-		display_string(0x0000, 0x0040, " Save Game F\\");
+		display_string(0x0000, 0x0030, " Load Game E\\");
+		display_string(0x0000, 0x0038, " Load Game F\\");
+		display_string(0x0000, 0x0040, " Save Game E\\");
+		display_string(0x0000, 0x0048, " Save Game F\\");
 	}
 	else // SEGA
 	{
@@ -1471,7 +1479,7 @@ void menu_function()
 	unsigned long menu_wait = 0x0007FFFF;
 	unsigned char menu_loop = 1;
 
-	DelayMS(500);
+	DelayMS(100);
 
 	while (menu_loop > 0)
 	{
@@ -1534,7 +1542,7 @@ void menu_function()
 
 		menu_wait = 0x0007FFFF;
 
-		DelayMS(500);
+		DelayMS(100);
 
 		if (cart_rom[0] == 0x4E && // N
 			cart_rom[1] == 0x45 && // E
@@ -1550,7 +1558,7 @@ void menu_function()
 				screen_clear();
 				audio_clear();
 				lcd_init();
-				if (screen_handheld == 0) { Display(); screen_clear(); }
+				if (screen_handheld == 0) { Display(); screen_clear(); audio_clear(); }
 				menu_loop = 0;
 			}
 			else if (menu_pos == 2)
@@ -1686,7 +1694,7 @@ void menu_function()
 				screen_clear();
 				audio_clear();
 				lcd_init();
-				if (screen_handheld == 0) { Display(); screen_clear(); }
+				if (screen_handheld == 0) { Display(); screen_clear(); audio_clear(); }
 				menu_loop = 0;
 			}
 			else if (menu_pos == 2)
@@ -1707,12 +1715,17 @@ void menu_function()
 			}
 			else if (menu_pos == 4)
 			{
+				if (scanline_scaled == 0) scanline_scaled = 1;
+				else scanline_scaled = 0;
+			}
+			else if (menu_pos == 5)
+			{
 				palette_num++;
 				if (palette_num >= 16) palette_num = 0;
 				auto_assign_palette(0, palette_num);
 				menu_wait = 0x0007FFFF;
 			}
-			else if (menu_pos == 5)
+			else if (menu_pos == 6)
 			{
 				gb_read_cart_ram_file("GAME-E.SAV");
 
@@ -1720,7 +1733,7 @@ void menu_function()
 
 				menu_loop = 0;
 			}
-			else if (menu_pos == 6)
+			else if (menu_pos == 7)
 			{
 				gb_read_cart_ram_file("GAME-F.SAV");
 
@@ -1728,7 +1741,7 @@ void menu_function()
 
 				menu_loop = 0;
 			}
-			else if (menu_pos == 7)
+			else if (menu_pos == 8)
 			{
 				gb_write_cart_ram_file("GAME-E.SAV");
 
@@ -1736,7 +1749,7 @@ void menu_function()
 
 				menu_loop = 0;
 			}
-			else if (menu_pos == 8)
+			else if (menu_pos == 9)
 			{
 				gb_write_cart_ram_file("GAME-F.SAV");
 
@@ -1757,7 +1770,7 @@ void menu_function()
 				screen_clear();
 				audio_clear();
 				lcd_init();
-				if (screen_handheld == 0) { Display(); screen_clear(); }
+				if (screen_handheld == 0) { Display(); screen_clear(); audio_clear(); }
 				menu_loop = 0;
 			}
 			else if (menu_pos == 2)
@@ -1853,7 +1866,7 @@ volatile void __attribute__((vector(_CHANGE_NOTICE_K_VECTOR),interrupt(ipl1srs),
 			audio_clear();
 
 			lcd_init();
-			if (screen_handheld == 0) { Display(); screen_clear(); }
+			if (screen_handheld == 0) { Display(); screen_clear(); audio_clear(); }
 
 			screen_redraw = 1;
 

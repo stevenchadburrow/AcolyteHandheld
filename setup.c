@@ -222,7 +222,20 @@ void __attribute__((optimize("O0"))) Setup()
 		usb_cursor_x[i] = 0x0000;
 		usb_cursor_y[i] = 0x0000;
 		
-	}	
+	}
+
+	// timer 8 for audio
+	T8CON = 0x0000; // reset
+	T8CON = 0x0000; // prescale of 1:1, 16-bit
+	TMR8 = 0x0000; // zero out counter
+	PR8 = 0xC2FD; // approx three scanlines (minus one)
+
+	IPC9bits.T8IP = 0x3; // interrupt priority 3
+	IPC9bits.T8IS = 0x0; // interrupt sub-priority 0
+	IFS1bits.T8IF = 0; // T8 clear flag
+	IEC1bits.T8IE = 1; // T8 interrupt on	
+	
+	T8CONbits.ON = 1; // turn on TMR8 for audio
 
 	// for debug purposes
 	//TRISKbits.TRISK7 = 1;
@@ -274,19 +287,6 @@ void __attribute__((optimize("O0"))) Display()
 	OC2CONbits.ON = 1; // turn OC2 on
 	OC3CONbits.ON = 1; // turn OC3 on
 	OC7CONbits.ON = 1; // turn OC7 on
-	
-	
-	// timer 8 for audio
-	T8CON = 0x0000; // reset
-	T8CON = 0x0000; // prescale of 1:1, 16-bit
-	TMR8 = 0x0000; // zero out counter
-	PR8 = 0xC2FD; // approx three scanlines (minus one)
-
-	IPC9bits.T8IP = 0x3; // interrupt priority 3
-	IPC9bits.T8IS = 0x0; // interrupt sub-priority 0
-	IFS1bits.T8IF = 0; // T8 clear flag
-	IEC1bits.T8IE = 1; // T8 interrupt on
-	
 
 	// DMA setup
 	IEC4bits.DMA0IE = 0; // disable interrupts
@@ -445,6 +445,11 @@ void __attribute__((optimize("O0"))) Display()
 		audio_buffer2[i] = 0x00;
 	}
 	
+	audio_bank = 0;
+	
+	audio_read = 0;
+	audio_write = 0;
+	
 	for (unsigned short y=0; y<SCREEN_Y2; y++)
 	{
 		for (unsigned short x=0; x<SCREEN_X; x++)
@@ -466,8 +471,6 @@ void __attribute__((optimize("O0"))) Display()
 	T3CONbits.ON = 1; // turn on TMR3 scanline start (cycle offset pre-calculated above)
 	T4CONbits.ON = 1; // turn on TMR4 scanline end (independent of others)
 	T6CONbits.ON = 1; // turn on TMR6 vertical sync (cycle offset pre-calculated above)
-	
-	T8CONbits.ON = 1; // turn on TMR8 for audio
 	
 	return;
 }
