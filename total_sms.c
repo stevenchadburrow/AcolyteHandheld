@@ -4543,18 +4543,20 @@ static FORCE_INLINE bool vdp_is_display_active(const struct SMS_Core* sms)
 
 static void vdp_write_scanline_to_frame(struct SMS_Core* sms, const pixel_width_t* scanline, const uint8_t y)
 {
+	unsigned char pos_y = y + 24;
+	
 	if (screen_handheld == 0)
 	{
 		for (int i = 0; i < SMS_SCREEN_WIDTH; ++i)
 		{
-			screen_pixel_vga_raw(i, y, (uint8_t)scanline[i]);
+			screen_pixel_vga_raw(i, pos_y, (uint8_t)scanline[i]);
 		}
 	}
 	else
 	{
 		for (int i = 0; i < SMS_SCREEN_WIDTH; ++i)
 		{
-			screen_pixel_lcd_raw(i, y, (uint16_t)(((scanline[i]&0xE0) >> 3) | ((scanline[i]&0x1C) << 6) | ((scanline[i]&0x03) << 14)));
+			screen_pixel_lcd_raw(i, pos_y, (uint16_t)(((scanline[i]&0xE0) >> 3) | ((scanline[i]&0x1C) << 6) | ((scanline[i]&0x03) << 14)));
 		}
 	}
 }
