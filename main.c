@@ -1881,6 +1881,8 @@ volatile void __attribute__((vector(_CHANGE_NOTICE_K_VECTOR),interrupt(ipl1srs),
 	return;
 }
 
+unsigned char menu_hold = 0;
+
 void game_loop(unsigned char override)
 {
 	while (!(controller_status_1 == 0x00 &&
@@ -1896,7 +1898,10 @@ void game_loop(unsigned char override)
 		cart_rom[1] == 0x45 && // E
 		cart_rom[2] == 0x53) || override == 1) // S
 	{
-		controller_config = 2; // start with 2 players
+		if (menu_hold == 0)
+		{
+			controller_config = 2; // start with 2 players
+		}
 		
 		nes_timers();
 
@@ -2323,12 +2328,16 @@ int main()
 				cart_rom = (volatile unsigned char *)0x9D0F0000; // change cart_rom to pack-in-game
 			}
 			
+			menu_hold = 0;
+			
 			if ((controller_status_1 & 0x04) == 0x04 || 
 				(controller_status_2 & 0x04) == 0x04 || 
 				(controller_status_3 & 0x04) == 0x04 || 
 				(controller_status_4 & 0x04) == 0x04)
 			{
 				menu_function(); // go to menu immediately if holding select
+				
+				menu_hold = 1;
 			}
 			
 			if ((controller_status_1 & 0x10) == 0x10 ||
