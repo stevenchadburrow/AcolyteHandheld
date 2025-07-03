@@ -4103,8 +4103,14 @@ bool SMS_parity8(uint8_t value)
 void SMS_run(struct SMS_Core* sms, size_t cycles)
 {
     for (size_t i = 0; i < cycles; i += sms->cpu.cycles)
-    {		
+    {	
+#ifdef DEBUG
+debug_reset();
+#endif
         z80_run(sms);
+#ifdef DEBUG
+debug_capture(5);
+#endif
 
         vdp_run(sms, sms->cpu.cycles);
 
@@ -5359,8 +5365,11 @@ static void vdp_render_frame(struct SMS_Core* sms)
 		return;
 	}
 	
-	if (frame_tally == 2) // every three frames
+	if (frame_tally >= screen_rate - 1) // every three frames
 	{
+#ifdef DEBUG
+debug_reset();
+#endif
 		struct PriorityBuf prio = {0};
 		pixel_width_t scanline[SMS_SCREEN_WIDTH] = {0};
 
@@ -5386,6 +5395,9 @@ static void vdp_render_frame(struct SMS_Core* sms)
 	
 		vdp_write_scanline_to_frame(sms, scanline, VDP.vcount);
 	}
+#ifdef DEBUG
+debug_capture(6);
+#endif
 }
 
 static void vdp_tick(struct SMS_Core* sms)
@@ -5612,6 +5624,14 @@ unsigned char sms_read_cart_ram_file(char filename[16])
 	return flag;
 }
 
+void __attribute__((optimize("O0"))) sms_wait()
+{
+	// speed limiter for when occasionally the SMS/GG/SG is too fast
+	while (screen_sync < screen_rate) { }
+		
+	screen_sync = 0;
+}
+
 void TotalSMS(unsigned char type)
 {	
 	audio_bank = 0; // works like NES
@@ -5706,17 +5726,14 @@ void TotalSMS(unsigned char type)
 		}
 
 		SMS_run(&sms, SMS_CYCLES_PER_FRAME);
-
-		if (frame_tally == 3) // only draw every three frames
+		
+		if (frame_tally >= screen_rate) // only draw every three frames
 		{
+			sms_wait();
+			
 			frame_tally = 0;
 			screen_flip();
 		}
-		
-		// speed limiter for when occasionally the SMS/GG/SG is too fast
-		while (screen_sync == 0) { }
-		
-		screen_sync = 0;
 	}
 }
 

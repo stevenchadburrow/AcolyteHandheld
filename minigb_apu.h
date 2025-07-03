@@ -21,7 +21,7 @@
  * Fill allocated buffer "data" with "len" number of 32-bit floating point
  * samples (native endian order) in stereo interleaved format.
  */
-void audio_callback(void *ptr, uint8_t *data, int len);
+void audio_callback(void *ptr, uint8_t *data);
 
 /**
  * Read audio register at given address "addr".

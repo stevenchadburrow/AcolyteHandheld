@@ -34,6 +34,8 @@
  */
 static uint8_t audio_mem[AUDIO_MEM_SIZE];
 
+unsigned short audio_n_samples = AUDIO_NSAMPLES;
+
 struct chan_len_ctr {
 	uint8_t load;
 	unsigned enabled : 1;
@@ -200,7 +202,7 @@ static void update_square_one(int8_t* samples)
 	uint32_t prev_pos = 0;
 	int32_t sample = 0;
 
-	for (uint_fast16_t i = 0; i < AUDIO_NSAMPLES; i++) {
+	for (uint_fast16_t i = 0; i < audio_n_samples; i++) {
 		update_len(c);
 
 		if (!c->enabled)
@@ -252,7 +254,7 @@ static void update_square_two(int8_t* samples)
 	uint32_t prev_pos = 0;
 	int32_t sample = 0;
 
-	for (uint_fast16_t i = 0; i < AUDIO_NSAMPLES; i++) {
+	for (uint_fast16_t i = 0; i < audio_n_samples; i++) {
 		update_len(c);
 
 		if (!c->enabled)
@@ -316,7 +318,7 @@ static void update_wave(int8_t *samples)
 	uint32_t prev_pos = 0;
 	int32_t sample   = 0;
 
-	for (uint_fast16_t i = 0; i < AUDIO_NSAMPLES; i++) {
+	for (uint_fast16_t i = 0; i < audio_n_samples; i++) {
 		update_len(c);
 
 		if (!c->enabled)
@@ -380,7 +382,7 @@ static void update_noise(int8_t *samples)
 	uint32_t prev_pos = 0;
 	int32_t sample    = 0;
 
-	for (uint_fast16_t i = 0; i < AUDIO_NSAMPLES; i++) {
+	for (uint_fast16_t i = 0; i < audio_n_samples; i++) {
 		update_len(c);
 
 		if (!c->enabled)
@@ -426,21 +428,14 @@ static void update_noise(int8_t *samples)
 /**
  * SDL2 style audio callback function.
  */
-void audio_callback(void *userdata, uint8_t *stream, int len)
+void audio_callback(void *userdata, uint8_t *stream)
 {
+	audio_n_samples = AUDIO_NSAMPLES * screen_rate;
+	
 	int8_t *samples = (int8_t *)stream;
 
 	/* Appease unused variable warning. */
 	(void)userdata;
-
-	//if (len * 2 >= 8192)
-	//{
-	//	memset(stream, 0, 8192);
-	//}
-	//else
-	//{
-	//	memset(stream, 0, len * 2); /// way over-compensating, up to 8192 total
-	//}
 
 	for (unsigned int i=0; i<AUDIO_EXT; i++) stream[i] = 0; // clear used area anyways?
 	

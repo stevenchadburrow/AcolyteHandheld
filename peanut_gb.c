@@ -9,6 +9,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+uint8_t frame_counter = 0;
+
 #include "minigb_apu.h"
 #include "minigb_apu.c"
 
@@ -24,8 +26,6 @@ struct priv_t
 volatile uint8_t __attribute__((coherent)) boot_rom[256];
 volatile uint8_t selected_palette_vga[3][7];
 volatile uint16_t selected_palette_lcd[3][7];
-
-uint8_t frame_counter = 0;
 
 unsigned char reset_check = 0;
 unsigned char palette_num = 0;
@@ -378,6 +378,16 @@ void lcd_draw_line(struct gb_s *gb,
 }
 #endif
 
+void __attribute__((optimize("O0"))) gb_wait()
+{	
+	// speed limiter for when occasionally the Gameboy is too fast
+	while (screen_sync < screen_rate) { }
+		
+	screen_sync = 0;
+	
+	return;
+}
+
 int PeanutGB()
 {
 	screen_clear();
@@ -548,52 +558,48 @@ int PeanutGB()
 
 		frame_counter++;
 		
-		if (frame_counter == 3) // only draw every three frames
+		if (frame_counter >= screen_rate) // only draw every three frames
 		{
 			scanline_draw = 1;
 		}
 		
 		/* Execute CPU cycles until the screen has to be redrawn. */
 		gb_run_frame(&gb);
-		
-		if (frame_counter == 3) // only draw every three frames
+				
+		if (frame_counter >= screen_rate) // only draw every three frames
 		{
+#if ENABLE_SOUND
+			if (audio_enable > 0)
+			{
+				if (audio_bank == 0) audio_init();
+
+				// playing audio
+				if (audio_bank == 1)
+				{
+					audio_callback(&gb, (uint8_t *)&audio_buffer2);
+				}
+				else if (audio_bank == 2)
+				{
+					audio_callback(&gb, (uint8_t *)&audio_buffer);
+				}
+
+				if (audio_enable > 0)
+				{
+					if (audio_bank == 1) audio_bank = 2;
+					else audio_bank = 1;
+				}
+
+				audio_read = 0;
+			}
+#endif
+			
+			gb_wait();
+			
 			frame_counter = 0;
 			screen_flip();
 			
 			scanline_draw = 0;
 		}
-
-#if ENABLE_SOUND
-		if (audio_enable > 0)
-		{
-			if (audio_bank == 0) audio_init();
-			
-			// playing audio
-			if (audio_bank == 1)
-			{
-				audio_callback(&gb, (uint8_t *)&audio_buffer2, AUDIO_NSAMPLES);
-			}
-			else if (audio_bank == 2)
-			{
-				audio_callback(&gb, (uint8_t *)&audio_buffer, AUDIO_NSAMPLES);
-			}
-		}
-#endif
-		// speed limiter for when occasionally the Gameboy is too fast
-		while (screen_sync == 0) { }
-		
-		screen_sync = 0;
-		
-#if ENABLE_SOUND
-		if (audio_enable > 0)
-		{
-			if (audio_bank == 1) audio_bank = 2;
-			else audio_bank = 1;
-			
-			audio_read = 0;
-		}
-#endif
 	}
 
 	return ret;

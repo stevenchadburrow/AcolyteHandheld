@@ -488,7 +488,11 @@ volatile void __attribute__((vector(_OUTPUT_COMPARE_3_VECTOR), interrupt(ipl7srs
 	{
 		screen_scanline = 0;
 		
-		screen_sync = 1; // used to check if screen has finished
+		screen_sync++; // used to check if screen has finished
+		
+#ifdef DEBUG
+debug_report();
+#endif
 	}
 	
 	if (screen_handheld > 0)

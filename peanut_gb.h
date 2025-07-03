@@ -1824,6 +1824,10 @@ void __gb_draw_line(struct gb_s *gb)
  */
 void __gb_step_cpu(struct gb_s *gb)
 {
+#ifdef DEBUG
+debug_reset();
+#endif    
+    
 	uint8_t opcode;
 	uint_fast16_t inst_cycles;
 	static const uint8_t op_cycles[0x100] =
@@ -3319,7 +3323,10 @@ void __gb_step_cpu(struct gb_s *gb)
 		(gb->gb_error)(gb, GB_INVALID_OPCODE, gb->cpu_reg.pc.reg - 1);
 		PGB_UNREACHABLE();
 	}
-
+#ifdef DEBUG
+debug_capture(3);
+#endif
+  
 	do
 	{
 		/* DIV register timing */
@@ -3548,6 +3555,9 @@ void __gb_step_cpu(struct gb_s *gb)
 		else if((gb->hram_io[IO_STAT] & STAT_MODE) == IO_STAT_MODE_SEARCH_OAM &&
 				gb->counter.lcd_count >= LCD_MODE_3_CYCLES)
 		{
+#ifdef DEBUG
+debug_reset();
+#endif
 			gb->hram_io[IO_STAT] =
 				(gb->hram_io[IO_STAT] & ~STAT_MODE) | IO_STAT_MODE_SEARCH_TRANSFER;
 #if ENABLE_LCD
@@ -3557,6 +3567,9 @@ void __gb_step_cpu(struct gb_s *gb)
 			/* If halted immediately jump to next LCD mode. */
 			if (gb->counter.lcd_count < LCD_MODE_0_CYCLES)
 				inst_cycles = LCD_MODE_0_CYCLES - gb->counter.lcd_count;
+#ifdef DEBUG
+debug_capture(4);
+#endif
 		}
 	} while(gb->gb_halt && (gb->hram_io[IO_IF] & gb->hram_io[IO_IE]) == 0);
 	/* If halted, loop until an interrupt occurs. */

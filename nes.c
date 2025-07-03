@@ -11,6 +11,9 @@
 // 'volatile' seems to keep it from getting general exception errors
 // but it also slows down the whole system!
 
+
+
+
 unsigned long prg_offset = 0x00000000; // offsets in cart_rom
 unsigned long chr_offset = 0x00000000;
 unsigned long end_offset = 0x00000000;
@@ -26,6 +29,21 @@ volatile unsigned char *chr_ram; // ppu ram from 0x0000 to 0x1FFF (if used)
 unsigned long nes_hack_vsync_flag = 0; // change this accordingly
 unsigned long nes_hack_sprite_priority = 0; // change this accordingly
 unsigned long nes_hack_border_shrink = 0; // change this accordingly
+
+unsigned long nes_loop_option = 4;
+unsigned long nes_loop_max = 0;
+unsigned long nes_loop_detect = 0;
+unsigned long nes_loop_count = 0;
+unsigned long nes_loop_cycles = 0;
+unsigned long nes_loop_read = 0;
+unsigned long nes_loop_write = 0;
+unsigned long nes_loop_branch = 0;
+unsigned long nes_loop_reg_a = 0;
+unsigned long nes_loop_reg_x = 0;
+unsigned long nes_loop_reg_y = 0;
+unsigned long nes_loop_halt = 0;
+
+unsigned long nes_timer_flag = 0;
 
 unsigned long nes_init_flag = 0;
 unsigned long nes_reset_flag = 0;
@@ -1319,6 +1337,8 @@ void nes_mmc3_irq_toggle(unsigned long a12)
 
 unsigned char cpu_read(unsigned long addr)
 {	
+	nes_loop_read = 1;
+	
 	if (addr < 0x00002000)
 	{
 		return nes_read_cpu_ram((addr&0x000007FF)); // internal ram (and mirrors)
@@ -1855,6 +1875,8 @@ unsigned char cpu_read(unsigned long addr)
 
 void cpu_write(unsigned long addr, unsigned char val)
 {	
+	nes_loop_write = 1;
+	
 	if (addr < 0x00002000)
 	{
 		nes_write_cpu_ram((addr&0x000007FF), val); // internal ram (and mirrors)
@@ -2765,6 +2787,7 @@ void cpu_write(unsigned long addr, unsigned char val)
 
 // internal functions
 #define CPU_BRA { \
+	nes_loop_branch = 1; \
 	cpu_temp_address = cpu_reg_pc; \
 	if (cpu_temp_memory > 127) cpu_reg_pc = (unsigned long)((cpu_reg_pc + cpu_temp_memory - 256) & 0x0000FFFF); \
 	else cpu_reg_pc = (unsigned long)((cpu_reg_pc + cpu_temp_memory) & 0x0000FFFF); \
@@ -2787,6 +2810,8 @@ void nes_irq()
 
 	//printf("IRQ %04X %02X\n", (unsigned int)cpu_reg_pc, (unsigned int)ppu_scanline_count);
 
+	nes_loop_halt = 0; // turn CPU back on
+	
 	cpu_flag_b = 0;
 			
 	cpu_temp_memory = ((cpu_reg_pc)>>8);
@@ -2812,6 +2837,8 @@ void nes_nmi()
 
 	//printf("NMI %04X %02X\n", (unsigned int)cpu_reg_pc, (unsigned int)ppu_scanline_count);
 
+	nes_loop_halt = 0; // turn CPU back on
+	
 	cpu_flag_b = 0;
 
 	cpu_temp_memory = ((cpu_reg_pc)>>8);
@@ -2835,6 +2862,8 @@ void nes_brk()
 
 	//printf("BRK %04X %d\n", (unsigned int)cpu_reg_pc, (signed int)ppu_scanline_count);
 
+	nes_loop_halt = 0; // turn CPU back on
+	
 	cpu_flag_b = 1;
 
 	cpu_reg_pc += 1; // add one to PC
@@ -3059,6 +3088,7 @@ unsigned long cpu_run()
 		// JMP
 		case 0x4C:
 		{
+			nes_loop_branch = 1;
 			cpu_temp_cycles = 0x0003;
 			cpu_temp_address = (unsigned long)cpu_read(cpu_reg_pc++);
 			cpu_temp_address += ((unsigned long)cpu_read(cpu_reg_pc++)<<8);
@@ -3067,6 +3097,7 @@ unsigned long cpu_run()
 		}
 		case 0x6C:
 		{
+			nes_loop_branch = 1;
 			cpu_temp_cycles = 0x0005;
 			cpu_temp_address = (unsigned long)cpu_read(cpu_reg_pc++);
 			cpu_temp_address += ((unsigned long)cpu_read(cpu_reg_pc++)<<8);
@@ -3079,6 +3110,7 @@ unsigned long cpu_run()
 		// JSR
 		case 0x20:
 		{
+			nes_loop_branch = 1;
 			cpu_temp_cycles = 0x0006;
 			cpu_temp_memory = ((cpu_reg_pc+1)>>8);
 			CPU_PUSH;
@@ -3226,6 +3258,7 @@ unsigned long cpu_run()
 		// RTI
 		case 0x40:
 		{
+			nes_loop_branch = 1;
 			cpu_temp_cycles = 0x0006;
 			CPU_PULL;
 			cpu_flag_n = ((cpu_temp_memory>>7)&0x01);
@@ -3248,6 +3281,7 @@ unsigned long cpu_run()
 		// RTS
 		case 0x60:
 		{
+			nes_loop_branch = 1;
 			cpu_temp_cycles = 0x0006;
 			CPU_PULL;
 			cpu_reg_pc = cpu_temp_memory;
@@ -3516,7 +3550,7 @@ void nes_background(unsigned long tile, unsigned long line)
 		if (line >= 8 && line < 232 && tile > 0 && tile < 31) // remove overscan
 		{	
 			if (nes_hack_border_shrink > 0 && (line < 16 || line >= 224)) return;
-			
+				
 			pixel_y = line;
 
 			scroll_t = ((ppu_reg_v & 0x0C00) | 0x03C0 | ((ppu_reg_v & 0x0380)>>4) | ((ppu_reg_v & 0x001C)>>2));
@@ -5463,13 +5497,79 @@ void nes_init()
 
 void nes_loop(unsigned long loop_count)
 {	
+	if (nes_loop_option > 0 && nes_loop_halt == 0)
+	{
+		nes_loop_write = 0;
+		nes_loop_read = 0;
+		nes_loop_branch = 0;
+		nes_loop_reg_a = cpu_reg_a;
+		nes_loop_reg_x = cpu_reg_x;
+		nes_loop_reg_y = cpu_reg_y;
+	}
+	
 	cpu_current_cycles = 0;
 	
-	cpu_current_cycles += cpu_run();
+	if (nes_loop_halt == 0)
+	{
+#ifdef DEBUG
+debug_reset();
+#endif
+		cpu_current_cycles += cpu_run();
+#ifdef DEBUG
+debug_capture(0);
+#endif
+	}
+
+	if (nes_loop_option > 0 && nes_loop_halt == 0)
+	{
+		if (nes_loop_write > 0 ||
+			(nes_loop_reg_a != cpu_reg_a) ||
+			(nes_loop_reg_x != cpu_reg_x) ||
+			(nes_loop_reg_y != cpu_reg_y))
+		{
+			nes_loop_detect = 0;
+			nes_loop_count = 0;
+			nes_loop_cycles = 0;
+		}
+		else if (nes_loop_branch > 0)
+		{
+			nes_loop_max = nes_loop_detect;
+			
+			nes_loop_detect = 1;
+			nes_loop_count++;
+			
+			nes_loop_cycles += cpu_current_cycles;
+			
+			if (nes_loop_count >= 16) // 16 is a good number
+			{
+				nes_loop_halt = 1;
+				
+				nes_loop_detect = 0;
+				nes_loop_count = 0;
+				
+				nes_loop_cycles = ((unsigned long)(nes_loop_cycles / nes_loop_max) >> 4); // divide by 16
+			}
+		}
+		else if (nes_loop_detect > 0 && nes_loop_read > 0)
+		{
+			nes_loop_detect++;
+			
+			nes_loop_cycles += cpu_current_cycles;
+				
+			if (nes_loop_detect > nes_loop_option+1)
+			{
+				nes_loop_detect = 0;
+				nes_loop_count = 0;
+				nes_loop_cycles = 0;
+			}
+		}
+	}
 
 	cpu_current_cycles += cpu_dma_cycles;
 	
 	cpu_dma_cycles = 0;
+	
+	if (nes_loop_halt > 0) cpu_current_cycles = nes_loop_cycles;
 	
 	if (cpu_current_cycles == 0)
 	{	
@@ -5499,7 +5599,13 @@ void nes_loop(unsigned long loop_count)
 			
 			if (ppu_frame_count >= loop_count)
 			{		
+#ifdef DEBUG
+debug_reset();
+#endif
 				nes_background(ppu_tile_count, ppu_scanline_count);
+#ifdef DEBUG
+debug_capture(1);
+#endif
 			}
 			
 			if (ppu_flag_eb > 0)
@@ -5528,7 +5634,10 @@ void nes_loop(unsigned long loop_count)
 			}
 			
 			if (ppu_frame_count >= loop_count)
-			{
+			{	
+#ifdef DEBUG
+debug_reset();
+#endif
 				if (ppu_flag_h == 0) // 8x8 sprites
 				{
 					nes_sprites(1, ppu_scanline_count+1, ppu_scanline_count+2); // background sprites
@@ -5555,6 +5664,9 @@ void nes_loop(unsigned long loop_count)
 						nes_sprites(0, ppu_scanline_count-16, ppu_scanline_count-15); // foreground sprites
 					}
 				}
+#ifdef DEBUG
+debug_capture(2);
+#endif
 			}
 		}
 		
@@ -5578,7 +5690,7 @@ void nes_loop(unsigned long loop_count)
 		apu_sample_cycles -= 341;
 		
 		if (nes_audio_flag > 0)
-		{
+		{			
 			nes_audio(341); // three scanlines
 			
 			nes_mixer(); // move this somewhere else?
@@ -5621,6 +5733,8 @@ void nes_loop(unsigned long loop_count)
 		ppu_status_v = 0x0001;
 
 		ppu_flag_v = 0x0001; // keep it high
+		
+		nes_loop_halt = 0; // turn CPU back on
 
 		ppu_status_0 = 0;
 
@@ -5636,6 +5750,8 @@ void nes_loop(unsigned long loop_count)
 			ppu_flag_v = 0x0001; // do not keep it high, just set it high once??? (see below)
 		}
 		
+		nes_loop_halt = 0; // turn CPU back on
+		
 		ppu_status_0 = 0;
 
 		ppu_flag_0 = 0;
@@ -5643,13 +5759,15 @@ void nes_loop(unsigned long loop_count)
 	else if (ppu_frame_cycles < 59565) // 29780.5 cycles per frame
 	{	
 		if (ppu_status_v == 0x0001)
-		{	
+		{
 			nes_sprite_0_calc();
-		
+
 			if (ppu_frame_count >= loop_count)
-			{	
+			{					
 				nes_border();
 			}
+			
+			nes_loop_halt = 0; // turn CPU back on
 		}
 		
 		// v-sync
@@ -5664,6 +5782,8 @@ void nes_loop(unsigned long loop_count)
 				ppu_status_0 = 1;
 				
 				ppu_flag_0 = 1;
+				
+				nes_loop_halt = 0; // turn CPU back on
 			}
 		}
 	}
@@ -5681,7 +5801,18 @@ void nes_loop(unsigned long loop_count)
 		// nmi
 		if (ppu_flag_e != 0x0000)
 		{	
-			nes_nmi();
+			nes_nmi();	
+		}
+
+		nes_loop_halt = 0; // turn CPU back on
+		
+		if (nes_timer_flag > 0)
+		{
+			nes_timer_flag = 0;
+			
+			nes_interrupt_count = 0;
+			
+			nes_timers();
 		}
 
 		nes_buttons();
