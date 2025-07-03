@@ -1417,9 +1417,9 @@ void menu_display()
 		else if (map_mmc3_irq_shift == 3) display_string(0x0050, 0x0040, " 2 => -1\\");
 		
 		display_string(0x0000, 0x0048, " Loop Halt \\");
-		if (nes_loop_option == 0) display_string(0x0050, 0x0048, "0 =>  1\\");
-		else if (nes_loop_option == 1) display_string(0x0050, 0x0048, " 1 =>  2\\");
-		else if (nes_loop_option == 2) display_string(0x0050, 0x0048, " 2 =>  3\\");
+		if (nes_loop_option == 0) display_string(0x0050, 0x0048, " 0 => 1\\");
+		else if (nes_loop_option == 1) display_string(0x0050, 0x0048, " 1 => 2\\");
+		else if (nes_loop_option == 2) display_string(0x0050, 0x0048, " 2 => 3\\");
 		else if (nes_loop_option == 3) display_string(0x0050, 0x0048, " 3 => 4\\");
 		else if (nes_loop_option == 4) display_string(0x0050, 0x0048, " 4 => 0\\");
 
