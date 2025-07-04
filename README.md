@@ -59,7 +59,7 @@ Supports settings adjustments, game save files, and save-states<br>
 <b>GB/GBC Emulator</b>
 
 Mahyar Koshkouei's <a href="https://github.com/deltabeard/Peanut-GB">Peanut-GB (with MiniGB-APU) Emulator</a><br>
-Copied and edited from the <a href="https://github.com/froggestspirit/Peanut-GB/">Version by "froggestspirit"</a><br>
+Copied and edited from the <a href="https://github.com/froggestspirit/Peanut-GB/">Version by "froggestspirit"</a> for GBC support<br>
 Supports 1.5x scaling, DMG/GBC palettes, and game save files<br>
 
 <b>SMS/GG/SG Emulator</b>
