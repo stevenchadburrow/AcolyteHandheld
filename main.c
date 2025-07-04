@@ -522,6 +522,9 @@ volatile unsigned char __attribute__((coherent)) screen_zero[2] = { 0x00, 0x00 }
 volatile unsigned char __attribute__((coherent)) screen_fill_color[2] = { 0x00, 0x00 }; // used in flood-fill function
 volatile unsigned char screen_handheld = 0; // 0 = VGA, 1 = LCD
 volatile unsigned char screen_rate = 3; // 3:1 frame rate
+volatile unsigned char screen_speed_mode = 0; // 0 = off, 1 = on
+volatile unsigned char screen_speed_dir = 1; // 0 = slow, 1 = normal, 2 = fast
+volatile unsigned char screen_speed_toggle = 0;
 volatile unsigned char screen_redraw = 0;
 volatile unsigned char screen_sync = 0;
 volatile unsigned long screen_pixel_location = 0;
@@ -1385,9 +1388,12 @@ void menu_display()
 		else if (audio_volume == 4) display_string(0x0040, 0x0010, "4 => 0\\");
 
 		display_string(0x0000, 0x0018, " Mapping \\");
-		if (controller_mapping == 1) display_string(0x0048, 0x0018, "1 => 2\\");
-		else if (controller_mapping == 2) display_string(0x0048, 0x0018, "2 => 0\\");
-		else display_string(0x0048, 0x0018, "0 => 1\\");
+		if (controller_mapping == 1 && screen_speed_mode == 0) display_string(0x0048, 0x0018, "BY_ => AX_ \\");
+		else if (controller_mapping == 2 && screen_speed_mode == 0) display_string(0x0048, 0x0018, "AX_ => ABS\\");
+		else if (controller_mapping == 0 && screen_speed_mode == 1) display_string(0x0048, 0x0018, "ABS => BYS\\");
+		else if (controller_mapping == 1 && screen_speed_mode == 1) display_string(0x0048, 0x0018, "BYS => AXS\\");
+		else if (controller_mapping == 2 && screen_speed_mode == 1) display_string(0x0048, 0x0018, "AXS => AB_\\");
+		else display_string(0x0048, 0x0018, "AB_ => BY_\\");
 		
 		display_string(0x0000, 0x0020, " Frames \\");
 		if (screen_rate == 1) display_string(0x0040, 0x0020, "1:1 => 2:1\\");
@@ -1449,9 +1455,12 @@ void menu_display()
 		else if (audio_volume == 4) display_string(0x0040, 0x0010, "4 => 0\\");
 		
 		display_string(0x0000, 0x0018, " Mapping \\");
-		if (controller_mapping == 1) display_string(0x0048, 0x0018, "1 => 2\\");
-		else if (controller_mapping == 2) display_string(0x0048, 0x0018, "2 => 0\\");
-		else display_string(0x0048, 0x0018, "0 => 1\\");
+		if (controller_mapping == 1 && screen_speed_mode == 0) display_string(0x0048, 0x0018, "BY_ => AX_ \\");
+		else if (controller_mapping == 2 && screen_speed_mode == 0) display_string(0x0048, 0x0018, "AX_ => ABS\\");
+		else if (controller_mapping == 0 && screen_speed_mode == 1) display_string(0x0048, 0x0018, "ABS => BYS\\");
+		else if (controller_mapping == 1 && screen_speed_mode == 1) display_string(0x0048, 0x0018, "BYS => AXS\\");
+		else if (controller_mapping == 2 && screen_speed_mode == 1) display_string(0x0048, 0x0018, "AXS => AB_\\");
+		else display_string(0x0048, 0x0018, "AB_ => BY_\\");
 		
 		display_string(0x0000, 0x0020, " Frames \\");
 		if (screen_rate == 1) display_string(0x0040, 0x0020, "1:1 => 2:1\\");
@@ -1513,9 +1522,12 @@ void menu_display()
 		else if (audio_volume == 4) display_string(0x0040, 0x0010, "4 => 0\\");
 		
 		display_string(0x0000, 0x0018, " Mapping \\");
-		if (controller_mapping == 1) display_string(0x0048, 0x0018, "1 => 2\\");
-		else if (controller_mapping == 2) display_string(0x0048, 0x0018, "2 => 0\\");
-		else display_string(0x0048, 0x0018, "0 => 1\\");
+		if (controller_mapping == 1 && screen_speed_mode == 0) display_string(0x0048, 0x0018, "BY_ => AX_ \\");
+		else if (controller_mapping == 2 && screen_speed_mode == 0) display_string(0x0048, 0x0018, "AX_ => ABS\\");
+		else if (controller_mapping == 0 && screen_speed_mode == 1) display_string(0x0048, 0x0018, "ABS => BYS\\");
+		else if (controller_mapping == 1 && screen_speed_mode == 1) display_string(0x0048, 0x0018, "BYS => AXS\\");
+		else if (controller_mapping == 2 && screen_speed_mode == 1) display_string(0x0048, 0x0018, "AXS => AB_\\");
+		else display_string(0x0048, 0x0018, "AB_ => BY_\\");
 		
 		display_string(0x0000, 0x0020, " Frames \\");
 		if (screen_rate == 1) display_string(0x0040, 0x0020, "1:1 => 2:1\\");
@@ -1644,9 +1656,12 @@ void menu_function()
 			}
 			else if (menu_pos == 3)
 			{
-				if (controller_mapping == 0) controller_mapping = 1;
-				else if (controller_mapping == 1) controller_mapping = 2;
-				else controller_mapping = 0;
+				if (controller_mapping == 0 && screen_speed_mode == 0) { controller_mapping = 1; screen_speed_mode = 0; }
+				else if (controller_mapping == 1 && screen_speed_mode == 0) { controller_mapping = 2; screen_speed_mode = 0; }
+				else if (controller_mapping == 2 && screen_speed_mode == 0) { controller_mapping = 0; screen_speed_mode = 1; }
+				else if (controller_mapping == 0 && screen_speed_mode == 1) { controller_mapping = 1; screen_speed_mode = 1; }
+				else if (controller_mapping == 1 && screen_speed_mode == 1) { controller_mapping = 2; screen_speed_mode = 1; }
+				else if (controller_mapping == 2 && screen_speed_mode == 1) { controller_mapping = 0; screen_speed_mode = 0; }
 				menu_wait = 0x0007FFFF;
 			}
 			else if (menu_pos == 4)
@@ -1790,9 +1805,12 @@ void menu_function()
 			}
 			else if (menu_pos == 3)
 			{
-				if (controller_mapping == 0) controller_mapping = 1;
-				else if (controller_mapping == 1) controller_mapping = 2;
-				else controller_mapping = 0;
+				if (controller_mapping == 0 && screen_speed_mode == 0) { controller_mapping = 1; screen_speed_mode = 0; }
+				else if (controller_mapping == 1 && screen_speed_mode == 0) { controller_mapping = 2; screen_speed_mode = 0; }
+				else if (controller_mapping == 2 && screen_speed_mode == 0) { controller_mapping = 0; screen_speed_mode = 1; }
+				else if (controller_mapping == 0 && screen_speed_mode == 1) { controller_mapping = 1; screen_speed_mode = 1; }
+				else if (controller_mapping == 1 && screen_speed_mode == 1) { controller_mapping = 2; screen_speed_mode = 1; }
+				else if (controller_mapping == 2 && screen_speed_mode == 1) { controller_mapping = 0; screen_speed_mode = 0; }
 				menu_wait = 0x0007FFFF;
 			}
 			else if (menu_pos == 4)
@@ -1880,9 +1898,12 @@ void menu_function()
 			}
 			else if (menu_pos == 3)
 			{
-				if (controller_mapping == 0) controller_mapping = 1;
-				else if (controller_mapping == 1) controller_mapping = 2;
-				else controller_mapping = 0;
+				if (controller_mapping == 0 && screen_speed_mode == 0) { controller_mapping = 1; screen_speed_mode = 0; }
+				else if (controller_mapping == 1 && screen_speed_mode == 0) { controller_mapping = 2; screen_speed_mode = 0; }
+				else if (controller_mapping == 2 && screen_speed_mode == 0) { controller_mapping = 0; screen_speed_mode = 1; }
+				else if (controller_mapping == 0 && screen_speed_mode == 1) { controller_mapping = 1; screen_speed_mode = 1; }
+				else if (controller_mapping == 1 && screen_speed_mode == 1) { controller_mapping = 2; screen_speed_mode = 1; }
+				else if (controller_mapping == 2 && screen_speed_mode == 1) { controller_mapping = 0; screen_speed_mode = 0; }
 				menu_wait = 0x0007FFFF;
 			}
 			else if (menu_pos == 4)

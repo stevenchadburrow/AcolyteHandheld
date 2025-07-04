@@ -5428,6 +5428,21 @@ static void vdp_tick(struct SMS_Core* sms)
         VDP.frame_interrupt_pending = true;
 
 		frame_tally++;
+		
+		if (screen_speed_mode == 0) screen_speed_dir = 1;
+		
+		if (screen_speed_dir == 0) // slow
+		{
+			while (screen_speed_dir == 0) { }
+			
+			screen_sync = 0;
+
+			while (screen_sync == 0) { }
+		}
+		else if (screen_speed_dir == 2) // fast
+		{
+			frame_tally = 0;
+		}
     }
 
     if (VDP.vcount == 193 && SMS_is_spiderman_int_hack_enabled(sms) && vdp_is_vblank_irq_wanted(sms)) // hack for spiderman, will remove soon
@@ -5723,6 +5738,22 @@ void TotalSMS(unsigned char type)
 		{
 			if ((controller_status_2 & 0x04) == 0x04) SMS_set_port_b(&sms, RESET_BUTTON, true); // select
 			if ((controller_status_2 & 0x08) == 0x08) SMS_set_port_b(&sms, PAUSE_BUTTON, true); // start
+		}
+		
+		if (screen_speed_mode > 0 && screen_speed_dir == 2) // fast mode
+		{
+			if (screen_speed_toggle == 0)
+			{
+				screen_speed_toggle = 1;
+
+				// turbo A and B buttons
+				controller_status_1 = (controller_status_1 & 0xFC);
+				controller_status_2 = (controller_status_2 & 0xFC);
+			}
+			else
+			{
+				screen_speed_toggle = 0;
+			}
 		}
 
 		SMS_run(&sms, SMS_CYCLES_PER_FRAME);

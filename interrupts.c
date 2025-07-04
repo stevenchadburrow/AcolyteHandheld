@@ -27,6 +27,8 @@ volatile void update_controllers()
 				{
 					controller_status_1 = 0x00;
 					
+					screen_speed_dir = 1;
+					
 					while (usb_readpos != usb_writepos)
 					{
 						if ((usb_buttons[usb_readpos] & 0x0100) == 0x0100) controller_status_1 = (controller_status_1 | 0x10); // up
@@ -44,16 +46,25 @@ volatile void update_controllers()
 						{
 							if ((usb_buttons[usb_readpos] & 0x0040) == 0x0040) controller_status_1 = (controller_status_1 | 0x02); // X
 							if ((usb_buttons[usb_readpos] & 0x0010) == 0x0010) controller_status_1 = (controller_status_1 | 0x01); // A
+							
+							if ((usb_buttons[usb_readpos] & 0x0080) == 0x0080) screen_speed_dir = 2;
+							if ((usb_buttons[usb_readpos] & 0x0020) == 0x0020) screen_speed_dir = 0;
 						}
 						else if (controller_mapping == 2) // changed
 						{
 							if ((usb_buttons[usb_readpos] & 0x0080) == 0x0080) controller_status_1 = (controller_status_1 | 0x02); // Y
 							if ((usb_buttons[usb_readpos] & 0x0020) == 0x0020) controller_status_1 = (controller_status_1 | 0x01); // B
+							
+							if ((usb_buttons[usb_readpos] & 0x0040) == 0x0040) screen_speed_dir = 2;
+							if ((usb_buttons[usb_readpos] & 0x0010) == 0x0010) screen_speed_dir = 0;
 						}
 						else // default
 						{
 							if ((usb_buttons[usb_readpos] & 0x0010) == 0x0010) controller_status_1 = (controller_status_1 | 0x02); // A
 							if ((usb_buttons[usb_readpos] & 0x0020) == 0x0020) controller_status_1 = (controller_status_1 | 0x01); // B
+							
+							if ((usb_buttons[usb_readpos] & 0x0080) == 0x0080) screen_speed_dir = 2;
+							if ((usb_buttons[usb_readpos] & 0x0040) == 0x0040) screen_speed_dir = 0;	
 						}
 
 						usb_readpos++;
@@ -62,6 +73,8 @@ volatile void update_controllers()
 			}
 			else
 			{
+				screen_speed_dir = 1;
+				
 				if (TRISKbits.TRISK6 > 0)
 				{
 					controller_status_1 = (controller_status_1 & 0x0C);
@@ -128,7 +141,9 @@ volatile void update_controllers()
 						((!PORTDbits.RD15) << 3) | // start
 						((!PORTBbits.RB15) << 1) | // B
 						((!PORTBbits.RB13)); // A
-						
+					
+					if (PORTBbits.RB14 == 0) screen_speed_dir = 2;
+					if (PORTBbits.RB12 == 0) screen_speed_dir = 0;
 				}
 				else if (controller_mapping == 2) // changed
 				{
@@ -141,7 +156,9 @@ volatile void update_controllers()
 						((!PORTDbits.RD15) << 3) | // start
 						((!PORTBbits.RB14) << 1) | // B
 						((!PORTBbits.RB12)); // A
-						
+					
+					if (PORTBbits.RB15 == 0) screen_speed_dir = 2;
+					if (PORTBbits.RB13 == 0) screen_speed_dir = 0;	
 				}
 				else // default
 				{
@@ -156,6 +173,9 @@ volatile void update_controllers()
 						((!PORTBbits.RB12)); // A
 						//((!PORTBbits.RB14) << 1) | // X
 						//((!PORTBbits.RB15)); // Y
+
+					if (PORTBbits.RB14 == 0) screen_speed_dir = 2;
+					if (PORTBbits.RB15 == 0) screen_speed_dir = 0;	
 				}
 			}
 		}
@@ -187,16 +207,25 @@ volatile void update_controllers()
 						{
 							if ((usb_buttons[usb_readpos] & 0x0040) == 0x0040) controller_status_2 = (controller_status_2 | 0x02); // X
 							if ((usb_buttons[usb_readpos] & 0x0010) == 0x0010) controller_status_2 = (controller_status_2 | 0x01); // A
+							
+							if ((usb_buttons[usb_readpos] & 0x0080) == 0x0080) screen_speed_dir = 2;
+							if ((usb_buttons[usb_readpos] & 0x0020) == 0x0020) screen_speed_dir = 0;
 						}
 						else if (controller_mapping == 2) // changed
 						{
 							if ((usb_buttons[usb_readpos] & 0x0080) == 0x0080) controller_status_2 = (controller_status_2 | 0x02); // Y
 							if ((usb_buttons[usb_readpos] & 0x0020) == 0x0020) controller_status_2 = (controller_status_2 | 0x01); // B
+							
+							if ((usb_buttons[usb_readpos] & 0x0040) == 0x0040) screen_speed_dir = 2;
+							if ((usb_buttons[usb_readpos] & 0x0010) == 0x0010) screen_speed_dir = 0;
 						}
 						else // default
 						{
 							if ((usb_buttons[usb_readpos] & 0x0010) == 0x0010) controller_status_2 = (controller_status_2 | 0x02); // A
 							if ((usb_buttons[usb_readpos] & 0x0020) == 0x0020) controller_status_2 = (controller_status_2 | 0x01); // B
+							
+							if ((usb_buttons[usb_readpos] & 0x0080) == 0x0080) screen_speed_dir = 2;
+							if ((usb_buttons[usb_readpos] & 0x0040) == 0x0040) screen_speed_dir = 0;
 						}
 
 						usb_readpos++;
@@ -205,6 +234,8 @@ volatile void update_controllers()
 			}
 			else
 			{
+				screen_speed_dir = 1;
+				
 				if (TRISKbits.TRISK6 > 0)
 				{
 					controller_status_2 = (controller_status_2 & 0x0C);
@@ -281,21 +312,25 @@ volatile void update_controllers()
 					((!PORTDbits.RD15) << 3) | // start
 					((!PORTBbits.RB15) << 1) | // B
 					((!PORTBbits.RB13)); // A
-
+				
+				if (PORTBbits.RB14 == 0) screen_speed_dir = 2;
+				if (PORTBbits.RB12 == 0) screen_speed_dir = 0;
 			}
 			else if (controller_mapping == 2) // changed
-				{
-					controller_status_1 = controller_status_1 | 
-						((!PORTBbits.RB8) << 4) | // up
-						((!PORTBbits.RB9) << 5) | // down
-						((!PORTBbits.RB10) << 6) | // left
-						((!PORTBbits.RB11) << 7) | // right
-						((!PORTDbits.RD14) << 2) | // select
-						((!PORTDbits.RD15) << 3) | // start
-						((!PORTBbits.RB14) << 1) | // B
-						((!PORTBbits.RB12)); // A
-						
-				}
+			{
+				controller_status_1 = controller_status_1 | 
+					((!PORTBbits.RB8) << 4) | // up
+					((!PORTBbits.RB9) << 5) | // down
+					((!PORTBbits.RB10) << 6) | // left
+					((!PORTBbits.RB11) << 7) | // right
+					((!PORTDbits.RD14) << 2) | // select
+					((!PORTDbits.RD15) << 3) | // start
+					((!PORTBbits.RB14) << 1) | // B
+					((!PORTBbits.RB12)); // A
+				
+				if (PORTBbits.RB15 == 0) screen_speed_dir = 2;
+				if (PORTBbits.RB13 == 0) screen_speed_dir = 0;		
+			}
 			else // default
 			{
 				controller_status_1 = controller_status_1 | 
@@ -309,6 +344,9 @@ volatile void update_controllers()
 					((!PORTBbits.RB12)); // A
 					//((!PORTBbits.RB14) << 1) | // X
 					//((!PORTBbits.RB15)); // Y
+				
+				if (PORTBbits.RB14 == 0) screen_speed_dir = 2;
+				if (PORTBbits.RB15 == 0) screen_speed_dir = 0;
 			}
 		}
 		else if (controller_config == 4) // four players
@@ -356,6 +394,8 @@ volatile void update_controllers()
 			{
 				controller_status_4 = 0x00;
 			}
+			
+			screen_speed_dir = 1;
 			
 			if (TRISKbits.TRISK6 > 0)
 			{
@@ -427,21 +467,25 @@ volatile void update_controllers()
 					((!PORTDbits.RD15) << 3) | // start
 					((!PORTBbits.RB15) << 1) | // B
 					((!PORTBbits.RB13)); // A
-
+				
+				if (PORTBbits.RB14 == 0) screen_speed_dir = 2;
+				if (PORTBbits.RB12 == 0) screen_speed_dir = 0;
 			}
 			else if (controller_mapping == 2) // changed
-				{
-					controller_status_1 = controller_status_1 | 
-						((!PORTBbits.RB8) << 4) | // up
-						((!PORTBbits.RB9) << 5) | // down
-						((!PORTBbits.RB10) << 6) | // left
-						((!PORTBbits.RB11) << 7) | // right
-						((!PORTDbits.RD14) << 2) | // select
-						((!PORTDbits.RD15) << 3) | // start
-						((!PORTBbits.RB14) << 1) | // B
-						((!PORTBbits.RB12)); // A
-						
-				}
+			{
+				controller_status_1 = controller_status_1 | 
+					((!PORTBbits.RB8) << 4) | // up
+					((!PORTBbits.RB9) << 5) | // down
+					((!PORTBbits.RB10) << 6) | // left
+					((!PORTBbits.RB11) << 7) | // right
+					((!PORTDbits.RD14) << 2) | // select
+					((!PORTDbits.RD15) << 3) | // start
+					((!PORTBbits.RB14) << 1) | // B
+					((!PORTBbits.RB12)); // A
+				
+				if (PORTBbits.RB15 == 0) screen_speed_dir = 2;
+				if (PORTBbits.RB13 == 0) screen_speed_dir = 0;		
+			}
 			else // default
 			{
 				controller_status_1 = controller_status_1 | 
@@ -455,6 +499,9 @@ volatile void update_controllers()
 					((!PORTBbits.RB12)); // A
 					//((!PORTBbits.RB14) << 1) | // X
 					//((!PORTBbits.RB15)); // Y
+				
+				if (PORTBbits.RB14 == 0) screen_speed_dir = 2;
+				if (PORTBbits.RB15 == 0) screen_speed_dir = 0;
 			}
 		}
 		
@@ -619,7 +666,7 @@ volatile void __attribute__((vector(_TIMER_8_VECTOR), interrupt(ipl3srs))) t8_ha
 {		
 	IFS1bits.T8IF = 0;  // clear interrupt flag
 	
-	if (audio_enable > 0)
+	if (audio_enable > 0 && (screen_speed_mode == 0 || screen_speed_dir == 1))
 	{
 		if (audio_bank == 0)
 		{

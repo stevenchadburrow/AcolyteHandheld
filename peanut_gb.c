@@ -864,7 +864,37 @@ int PeanutGB()
 		if ((controller_status_1 & 0x04) == 0x04) gb.direct.joypad &= ~JOYPAD_SELECT;
 		if ((controller_status_1 & 0x08) == 0x08) gb.direct.joypad &= ~JOYPAD_START;
 
+		if (screen_speed_mode > 0 && screen_speed_dir == 2) // fast mode
+		{
+			if (screen_speed_toggle == 0)
+			{
+				screen_speed_toggle = 1;
+
+				// turbo A and B buttons
+				controller_status_1 = (controller_status_1 & 0xFC);
+			}
+			else
+			{
+				screen_speed_toggle = 0;
+			}
+		}
+		
 		frame_counter++;
+		
+		if (screen_speed_mode == 0) screen_speed_dir = 1;
+		
+		if (screen_speed_dir == 0) // slow
+		{
+			while (screen_speed_dir == 0) { }
+			
+			screen_sync = 0;
+
+			while (screen_sync == 0) { }
+		}
+		else if (screen_speed_dir == 2) // fast
+		{
+			frame_counter = 0;
+		}
 		
 		if (frame_counter >= screen_rate) // only draw every three frames
 		{

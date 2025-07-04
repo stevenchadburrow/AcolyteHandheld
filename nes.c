@@ -44,7 +44,6 @@ unsigned long nes_loop_reg_y = 0;
 unsigned long nes_loop_halt = 0;
 
 unsigned long nes_timer_flag = 0;
-
 unsigned long nes_init_flag = 0;
 unsigned long nes_reset_flag = 0;
 unsigned long nes_audio_flag = 1;
@@ -1213,6 +1212,24 @@ void nes_buttons()
 {
 	ctl_value_1 = 0xFF080000 | (controller_status_3 << 8) | controller_status_1;
 	ctl_value_2 = 0xFF040000 | (controller_status_4 << 8) | controller_status_2;
+	
+	if (screen_speed_mode > 0 && screen_speed_dir == 2) // fast mode
+	{
+		if (screen_speed_toggle == 0)
+		{
+			screen_speed_toggle = 1;
+
+			// turbo A and B buttons
+			controller_status_1 = (controller_status_1 & 0xFC);
+			controller_status_2 = (controller_status_2 & 0xFC);
+			controller_status_3 = (controller_status_3 & 0xFC);
+			controller_status_4 = (controller_status_4 & 0xFC);
+		}
+		else
+		{
+			screen_speed_toggle = 0;
+		}
+	}
 }
 
 // needs to be unoptimized else it will be deleted
@@ -5806,7 +5823,9 @@ debug_capture(2);
 
 		nes_loop_halt = 0; // turn CPU back on
 		
-		if (nes_timer_flag > 0)
+		if (screen_speed_mode == 0) screen_speed_dir = 1; 
+		
+		if (nes_timer_flag > 0 && screen_speed_dir == 1)
 		{
 			nes_timer_flag = 0;
 			
@@ -5816,20 +5835,42 @@ debug_capture(2);
 		}
 
 		nes_buttons();
-
-		// finish frame drawing
-		if (ppu_frame_count >= loop_count)
+		
+		if (screen_speed_dir == 0) // slow
 		{
+			while (screen_speed_dir == 0) { }
+			
+			screen_sync = 0;
+
+			while (screen_sync == 0) { }
+			
+			nes_wait(0);  
+			
+			nes_timer_flag = 1;
+		}
+		else if (screen_speed_dir == 1) // normal
+		{
+			if (ppu_frame_count >= loop_count)
+			{
+				ppu_frame_count = 0;
+
+				screen_flip();
+
+				nes_wait(loop_count);
+			}
+
+			ppu_frame_count++;
+		}
+		else if (screen_speed_dir == 2) // fast
+		{
+			nes_wait(0);
+			
 			ppu_frame_count = 0;
 			
-			screen_flip();
-			
-			nes_wait(loop_count);
+			nes_timer_flag = 1;
 		}
 		
 		ppu_tile_count = 0;
 		ppu_scanline_count = -22; // was -21
-		
-		ppu_frame_count++;
 	}
 }
