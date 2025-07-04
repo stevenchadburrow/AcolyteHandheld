@@ -691,7 +691,7 @@ void __attribute__((optimize("O0"))) gb_wait()
 	return;
 }
 
-int PeanutGB()
+int PeanutGB(unsigned char core)
 {
 	screen_clear();
 	audio_clear();
@@ -707,6 +707,8 @@ int PeanutGB()
 	/* Initialise emulator context. */
 	gb_ret = gb_init(&gb, &gb_rom_read, &gb_cart_ram_read, &gb_cart_ram_write,
 			 &gb_error, &priv);
+	
+	if (core == 0) gb.cgb.cgbMode = 0; // run as DMG Gameboy
 
 	switch(gb_ret)
 	{

@@ -2055,20 +2055,28 @@ void game_loop(unsigned char override)
 	else if ((cart_rom[0x0104] == 0xCE &&
 		cart_rom[0x0105] == 0xED &&
 		cart_rom[0x0106] == 0x66 &&
-		cart_rom[0x0107] == 0x66) || override == 2) // GB
+		cart_rom[0x0107] == 0x66) || 
+		(override == 2 || override == 3)) // GB/GBC
 	{
 		controller_config = 1; // only one player
 		
-		PeanutGB();
+		if (override == 2)
+		{
+			PeanutGB(0); // force DMG mode
+		}
+		else
+		{
+			PeanutGB(1); // allow DMG or CGB
+		}
 	}
 	else if ((cart_rom[0x7FF4] == 0x53 &&
 		cart_rom[0x7FF5] == 0x45 &&
 		cart_rom[0x7FF6] == 0x47 &&
 		cart_rom[0x7FF7] == 0x41) ||
-		(override == 3 || override == 4)) // SEGA
+		(override == 4 || override == 5)) // SEGA
 	{
 		if (((cart_rom[0x7FFF] & 0xF0) == 0x30 ||
-			(cart_rom[0x7FFF] & 0xF0) == 0x40) || override == 3)  // SMS
+			(cart_rom[0x7FFF] & 0xF0) == 0x40) || override == 4)  // SMS
 		{
 			controller_config = 2; // two players
 			button_disable = 1; // disable pause/reset by default
@@ -2077,7 +2085,7 @@ void game_loop(unsigned char override)
 		}
 		else if (((cart_rom[0x7FFF] & 0xF0) == 0x50 ||
 			(cart_rom[0x7FFF] & 0xF0) == 0x60 ||
-			(cart_rom[0x7FFF] & 0xF0) == 0x70) || override == 4) // GG
+			(cart_rom[0x7FFF] & 0xF0) == 0x70) || override == 5) // GG
 		{
 			controller_config = 1; // one player
 			button_disable = 0; // enable pause/reset by default
@@ -2245,19 +2253,26 @@ int main()
 					menu_function(); // go to menu immediately if holding select
 				}
 				
-				if ((controller_status_1 & 0x40) == 0x40 ||
+				if ((controller_status_1 & 0x10) == 0x10 ||
+				(controller_status_2 & 0x10) == 0x10 ||
+				(controller_status_3 & 0x10) == 0x10 ||
+				(controller_status_4 & 0x10) == 0x10) // UP, GB override
+				{
+					game_loop(2);
+				}
+				else if ((controller_status_1 & 0x40) == 0x40 ||
 					(controller_status_2 & 0x40) == 0x40 ||
 					(controller_status_3 & 0x40) == 0x40 ||
 					(controller_status_4 & 0x40) == 0x40) // LEFT, SMS override
 				{
-					game_loop(3);
+					game_loop(4);
 				}
 				else if ((controller_status_1 & 0x80) == 0x80 ||
 					(controller_status_2 & 0x80) == 0x80 ||
 					(controller_status_3 & 0x80) == 0x80 ||
 					(controller_status_4 & 0x80) == 0x80) // RIGHT, GG override
 				{
-					game_loop(4);
+					game_loop(5);
 				}
 				else
 				{
@@ -2485,14 +2500,14 @@ int main()
 				(controller_status_3 & 0x40) == 0x40 ||
 				(controller_status_4 & 0x40) == 0x40) // LEFT, SMS override
 			{
-				game_loop(3);
+				game_loop(4);
 			}
 			else if ((controller_status_1 & 0x80) == 0x80 ||
 				(controller_status_2 & 0x80) == 0x80 ||
 				(controller_status_3 & 0x80) == 0x80 ||
 				(controller_status_4 & 0x80) == 0x80) // RIGHT, GG override
 			{
-				game_loop(4);
+				game_loop(5);
 			}
 			else
 			{
