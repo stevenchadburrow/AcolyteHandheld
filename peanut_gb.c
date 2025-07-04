@@ -14,7 +14,8 @@ uint8_t frame_counter = 0;
 #include "minigb_apu.h"
 #include "minigb_apu.c"
 
-#include "peanut_gb.h"
+#include "peanut_gbc.h" // color game boy version, older code?
+//#include "peanut_gb.h" // only original game boy version, newer code?
 
 
 struct priv_t
@@ -268,110 +269,412 @@ void lcd_draw_line(struct gb_s *gb,
 		const uint_fast8_t line
 	)
 {	
-	if (scanline_scaled == 0)
+    if (gb->cgb.cgbMode) // CGB
 	{
-		if (screen_handheld == 0)
+		unsigned long comp_red[2][2], comp_green[2][2], comp_blue[2][2];
+		
+		if (scanline_scaled == 0)
 		{
-			for(unsigned int x = 0; x < LCD_WIDTH; x++)
+			if (screen_handheld == 0)
 			{
-				screen_pixel_vga_raw(x+48, line+48, selected_palette_vga[(scanline_pixels1[(x)] & LCD_PALETTE_ALL) >> 4][((scanline_pixels1[(x)] & 3)<<1)]);
+				for(unsigned int x = 0; x < LCD_WIDTH; x++)
+				{
+					comp_red[0][0] = ((gb->cgb.fixPalette[scanline_pixels1[x]] & 0x7000) >> 7);
+					comp_green[0][0] = ((gb->cgb.fixPalette[scanline_pixels1[x]] & 0x0380) >> 5);
+					comp_blue[0][0] = ((gb->cgb.fixPalette[scanline_pixels1[x]] & 0x0018) >> 3);
+					
+					screen_pixel_vga_raw(x+48, line+48, (unsigned char)(comp_red[0][0] | comp_green[0][0] | comp_blue[0][0]));
+				}
+			}
+			else
+			{
+				for(unsigned int x = 0; x < LCD_WIDTH; x++)
+				{
+					comp_red[0][0] = ((gb->cgb.fixPalette[scanline_pixels1[x]] & 0x7000) >> 10);
+					comp_green[0][0] = ((gb->cgb.fixPalette[scanline_pixels1[x]] & 0x0380) << 1);
+					comp_blue[0][0] = ((gb->cgb.fixPalette[scanline_pixels1[x]] & 0x0018) << 11);
+					
+					screen_pixel_lcd_raw(x+48, line+48, (unsigned short)(comp_red[0][0] | comp_green[0][0] | comp_blue[0][0]));
+				}
 			}
 		}
 		else
 		{
-			for(unsigned int x = 0; x < LCD_WIDTH; x++)
+			unsigned long blend_red[5], blend_green[5], blend_blue[5];
+
+			unsigned short pos_x = 8;
+			unsigned short pos_y = 12 + scanline_count;
+			
+			if (screen_handheld == 0)
 			{
-				screen_pixel_lcd_raw(x+48, line+48, selected_palette_lcd[(scanline_pixels1[(x)] & LCD_PALETTE_ALL) >> 4][((scanline_pixels1[(x)] & 3)<<1)]);
+				for (unsigned int x = 0; x < LCD_WIDTH; x+=2)
+				{
+					comp_red[0][0] = ((gb->cgb.fixPalette[scanline_pixels1[x]] & 0x7000) >> 7);
+					comp_green[0][0] = ((gb->cgb.fixPalette[scanline_pixels1[x]] & 0x0380) >> 5);
+					comp_blue[0][0] = ((gb->cgb.fixPalette[scanline_pixels1[x]] & 0x0018) >> 3);
+					
+					comp_red[1][0] = ((gb->cgb.fixPalette[scanline_pixels1[x+1]] & 0x7000) >> 7);
+					comp_green[1][0] = ((gb->cgb.fixPalette[scanline_pixels1[x+1]] & 0x0380) >> 5);
+					comp_blue[1][0] = ((gb->cgb.fixPalette[scanline_pixels1[x+1]] & 0x0018) >> 3);
+					
+					comp_red[0][1] = ((gb->cgb.fixPalette[scanline_pixels2[x]] & 0x7000) >> 7);
+					comp_green[0][1] = ((gb->cgb.fixPalette[scanline_pixels2[x]] & 0x0380) >> 5);
+					comp_blue[0][1] = ((gb->cgb.fixPalette[scanline_pixels2[x]] & 0x0018) >> 3);
+					
+					comp_red[1][1] = ((gb->cgb.fixPalette[scanline_pixels2[x+1]] & 0x7000) >> 7);
+					comp_green[1][1] = ((gb->cgb.fixPalette[scanline_pixels2[x+1]] & 0x0380) >> 5);
+					comp_blue[1][1] = ((gb->cgb.fixPalette[scanline_pixels2[x+1]] & 0x0018) >> 3);
+					
+					blend_red[0] = (((comp_red[0][0] + comp_red[1][0]) >> 1) & 0xE0);
+					blend_green[0] = (((comp_green[0][0] + comp_green[1][0]) >> 1) & 0x1C);
+					blend_blue[0] = (((comp_blue[0][0] + comp_blue[1][0]) >> 1) & 0x03);
+					
+					blend_red[1] = (((comp_red[0][1] + comp_red[1][1]) >> 1) & 0xE0);
+					blend_green[1] = (((comp_green[0][1] + comp_green[1][1]) >> 1) & 0x1C);
+					blend_blue[1] = (((comp_blue[0][1] + comp_blue[1][1]) >> 1) & 0x03);
+					
+					blend_red[2] = (((comp_red[0][0] + comp_red[0][1]) >> 1) & 0xE0);
+					blend_green[2] = (((comp_green[0][0] + comp_green[0][1]) >> 1) & 0x1C);
+					blend_blue[2] = (((comp_blue[0][0] + comp_blue[0][1]) >> 1) & 0x03);
+					
+					blend_red[3] = (((comp_red[1][0] + comp_red[1][1]) >> 1) & 0xE0);
+					blend_green[3] = (((comp_green[1][0] + comp_green[1][1]) >> 1) & 0x1C);
+					blend_blue[3] = (((comp_blue[1][0] + comp_blue[1][1]) >> 1) & 0x03);
+					
+					blend_red[4] = (((blend_red[0] + blend_red[1] + blend_red[2] + blend_red[3]) >> 2) & 0xE0);
+					blend_green[4] = (((blend_green[0] + blend_green[1] + blend_green[2] + blend_green[3]) >> 2) & 0x1C);
+					blend_blue[4] = (((blend_blue[0] + blend_blue[1] + blend_blue[2] + blend_blue[3]) >> 2) & 0x03);
+					
+					screen_pixel_vga_raw(pos_x, pos_y, (unsigned char)(comp_red[0][0] | comp_green[0][0] | comp_blue[0][0]));
+					screen_pixel_vga_raw(pos_x, pos_y+1, (unsigned char)(blend_red[2] | blend_green[2] | blend_blue[2]));
+					screen_pixel_vga_raw(pos_x, pos_y+2, (unsigned char)(comp_red[0][1] | comp_green[0][1] | comp_blue[0][1]));
+
+					pos_x++;
+
+					screen_pixel_vga_raw(pos_x, pos_y, (unsigned char)(blend_red[0] | blend_green[0] | blend_blue[0]));
+					screen_pixel_vga_raw(pos_x, pos_y+1, (unsigned char)(blend_red[4] | blend_green[4] | blend_blue[4]));
+					screen_pixel_vga_raw(pos_x, pos_y+2, (unsigned char)(blend_red[1] | blend_green[1] | blend_blue[1]));
+
+					pos_x++;
+
+					screen_pixel_vga_raw(pos_x, pos_y, (unsigned char)(comp_red[1][0] | comp_green[1][0] | comp_blue[1][0]));
+					screen_pixel_vga_raw(pos_x, pos_y+1, (unsigned char)(blend_red[3] | blend_green[3] | blend_blue[3]));
+					screen_pixel_vga_raw(pos_x, pos_y+2, (unsigned char)(comp_red[1][1] | comp_green[1][1] | comp_blue[1][1]));
+
+					pos_x++;
+				}
+			}
+			else
+			{
+				for (unsigned int x = 0; x < LCD_WIDTH; x+=2)
+				{
+					comp_red[0][0] = ((gb->cgb.fixPalette[scanline_pixels1[x]] & 0x7000) >> 10);
+					comp_green[0][0] = ((gb->cgb.fixPalette[scanline_pixels1[x]] & 0x0380) << 1);
+					comp_blue[0][0] = ((gb->cgb.fixPalette[scanline_pixels1[x]] & 0x0018) << 11);
+					
+					comp_red[1][0] = ((gb->cgb.fixPalette[scanline_pixels1[x+1]] & 0x7000) >> 10);
+					comp_green[1][0] = ((gb->cgb.fixPalette[scanline_pixels1[x+1]] & 0x0380) << 1);
+					comp_blue[1][0] = ((gb->cgb.fixPalette[scanline_pixels1[x+1]] & 0x0018) << 11);
+					
+					comp_red[0][1] = ((gb->cgb.fixPalette[scanline_pixels2[x]] & 0x7000) >> 10);
+					comp_green[0][1] = ((gb->cgb.fixPalette[scanline_pixels2[x]] & 0x0380) << 1);
+					comp_blue[0][1] = ((gb->cgb.fixPalette[scanline_pixels2[x]] & 0x0018) << 11);
+					
+					comp_red[1][1] = ((gb->cgb.fixPalette[scanline_pixels2[x+1]] & 0x7000) >> 10);
+					comp_green[1][1] = ((gb->cgb.fixPalette[scanline_pixels2[x+1]] & 0x0380) << 1);
+					comp_blue[1][1] = ((gb->cgb.fixPalette[scanline_pixels2[x+1]] & 0x0018) << 11);
+					
+					blend_red[0] = (((comp_red[0][0] + comp_red[1][0]) >> 1) & 0x001C);
+					blend_green[0] = (((comp_green[0][0] + comp_green[1][0]) >> 1) & 0x0700);
+					blend_blue[0] = (((comp_blue[0][0] + comp_blue[1][0]) >> 1) & 0xC000);
+					
+					blend_red[1] = (((comp_red[0][1] + comp_red[1][1]) >> 1) & 0x001C);
+					blend_green[1] = (((comp_green[0][1] + comp_green[1][1]) >> 1) & 0x0700);
+					blend_blue[1] = (((comp_blue[0][1] + comp_blue[1][1]) >> 1) & 0xC000);
+					
+					blend_red[2] = (((comp_red[0][0] + comp_red[0][1]) >> 1) & 0x001C);
+					blend_green[2] = (((comp_green[0][0] + comp_green[0][1]) >> 1) & 0x0700);
+					blend_blue[2] = (((comp_blue[0][0] + comp_blue[0][1]) >> 1) & 0xC000);
+					
+					blend_red[3] = (((comp_red[1][0] + comp_red[1][1]) >> 1) & 0x001C);
+					blend_green[3] = (((comp_green[1][0] + comp_green[1][1]) >> 1) & 0x0700);
+					blend_blue[3] = (((comp_blue[1][0] + comp_blue[1][1]) >> 1) & 0xC000);
+					
+					blend_red[4] = (((blend_red[0] + blend_red[1] + blend_red[2] + blend_red[3]) >> 2) & 0x001C);
+					blend_green[4] = (((blend_green[0] + blend_green[1] + blend_green[2] + blend_green[3]) >> 2) & 0x0700);
+					blend_blue[4] = (((blend_blue[0] + blend_blue[1] + blend_blue[2] + blend_blue[3]) >> 2) & 0xC000);
+					
+					screen_pixel_lcd_raw(pos_x, pos_y, (unsigned short)(comp_red[0][0] | comp_green[0][0] | comp_blue[0][0]));
+					screen_pixel_lcd_raw(pos_x, pos_y+1, (unsigned short)(blend_red[2] | blend_green[2] | blend_blue[2]));
+					screen_pixel_lcd_raw(pos_x, pos_y+2, (unsigned short)(comp_red[0][1] | comp_green[0][1] | comp_blue[0][1]));
+
+					pos_x++;
+
+					screen_pixel_lcd_raw(pos_x, pos_y, (unsigned short)(blend_red[0] | blend_green[0] | blend_blue[0]));
+					screen_pixel_lcd_raw(pos_x, pos_y+1, (unsigned short)(blend_red[4] | blend_green[4] | blend_blue[4]));
+					screen_pixel_lcd_raw(pos_x, pos_y+2, (unsigned short)(blend_red[1] | blend_green[1] | blend_blue[1]));
+
+					pos_x++;
+
+					screen_pixel_lcd_raw(pos_x, pos_y, (unsigned short)(comp_red[1][0] | comp_green[1][0] | comp_blue[1][0]));
+					screen_pixel_lcd_raw(pos_x, pos_y+1, (unsigned short)(blend_red[3] | blend_green[3] | blend_blue[3]));
+					screen_pixel_lcd_raw(pos_x, pos_y+2, (unsigned short)(comp_red[1][1] | comp_green[1][1] | comp_blue[1][1]));
+
+					pos_x++;
+				}
 			}
 		}
 	}
-	else
+	else // DMG
 	{
-		unsigned char grid[3][3];
-
-		unsigned short pos_x = 8;
-		unsigned short pos_y = 12 + scanline_count;
-
-		unsigned char pal[2][2];
-
-		if (screen_handheld == 0)
+		if (scanline_scaled == 0)
 		{
-			for (unsigned int x = 0; x < LCD_WIDTH; x+=2)
+			if (screen_handheld == 0)
 			{
-				grid[0][0] = ((scanline_pixels1[x] & 3) << 1);
-				grid[2][0] = ((scanline_pixels1[x+1] & 3) << 1);
-				grid[1][0] = ((grid[0][0] + grid[2][0]) >> 1);
-
-				grid[0][2] = ((scanline_pixels2[x] & 3) << 1);
-				grid[2][2] = ((scanline_pixels2[x+1] & 3) << 1);
-				grid[1][2] = ((grid[0][2] + grid[2][2]) >> 1);
-
-				grid[0][1] = ((grid[0][0] + grid[0][2]) >> 1);
-				grid[1][1] = ((grid[1][0] + grid[1][2]) >> 1);
-				grid[2][1] = ((grid[2][0] + grid[2][2]) >> 1);
-
-				pal[0][0] = ((scanline_pixels1[x]&LCD_PALETTE_ALL) >> 4);
-				pal[1][0] = ((scanline_pixels1[x+1]&LCD_PALETTE_ALL) >> 4);
-				pal[0][1] = ((scanline_pixels2[x]&LCD_PALETTE_ALL) >> 4);
-				pal[1][1] = ((scanline_pixels2[x+1]&LCD_PALETTE_ALL) >> 4);
-
-				screen_pixel_vga_raw(pos_x, pos_y, selected_palette_vga[pal[0][0]][grid[0][0]]);
-				screen_pixel_vga_raw(pos_x, pos_y+1, selected_palette_vga[pal[0][0]][grid[0][1]]);
-				screen_pixel_vga_raw(pos_x, pos_y+2, selected_palette_vga[pal[1][0]][grid[0][2]]);
-
-				pos_x++;
-
-				screen_pixel_vga_raw(pos_x, pos_y, selected_palette_vga[pal[0][0]][grid[1][0]]);
-				screen_pixel_vga_raw(pos_x, pos_y+1, selected_palette_vga[pal[0][0]][grid[1][1]]);
-				screen_pixel_vga_raw(pos_x, pos_y+2, selected_palette_vga[pal[1][0]][grid[1][2]]);
-
-				pos_x++;
-
-				screen_pixel_vga_raw(pos_x, pos_y, selected_palette_vga[pal[0][1]][grid[2][0]]);
-				screen_pixel_vga_raw(pos_x, pos_y+1, selected_palette_vga[pal[0][1]][grid[2][1]]);
-				screen_pixel_vga_raw(pos_x, pos_y+2, selected_palette_vga[pal[1][1]][grid[2][2]]);
-
-				pos_x++;
+				for(unsigned int x = 0; x < LCD_WIDTH; x++)
+				{
+					screen_pixel_vga_raw(x+48, line+48, selected_palette_vga[(scanline_pixels1[(x)] & LCD_PALETTE_ALL) >> 4][((scanline_pixels1[(x)] & 3)<<1)]);
+				}
+			}
+			else
+			{
+				for(unsigned int x = 0; x < LCD_WIDTH; x++)
+				{
+					screen_pixel_lcd_raw(x+48, line+48, selected_palette_lcd[(scanline_pixels1[(x)] & LCD_PALETTE_ALL) >> 4][((scanline_pixels1[(x)] & 3)<<1)]);
+				}
 			}
 		}
 		else
 		{
-			for (unsigned int x = 0; x < LCD_WIDTH; x+=2)
+			if (palette_num < 4) // greyscale
 			{
-				grid[0][0] = ((scanline_pixels1[x] & 3) << 1);
-				grid[2][0] = ((scanline_pixels1[x+1] & 3) << 1);
-				grid[1][0] = ((grid[0][0] + grid[2][0]) >> 1);
+				unsigned char grid[3][3];
 
-				grid[0][2] = ((scanline_pixels2[x] & 3) << 1);
-				grid[2][2] = ((scanline_pixels2[x+1] & 3) << 1);
-				grid[1][2] = ((grid[0][2] + grid[2][2]) >> 1);
+				unsigned short pos_x = 8;
+				unsigned short pos_y = 12 + scanline_count;
 
-				grid[0][1] = ((grid[0][0] + grid[0][2]) >> 1);
-				grid[1][1] = ((grid[1][0] + grid[1][2]) >> 1);
-				grid[2][1] = ((grid[2][0] + grid[2][2]) >> 1);
+				unsigned char pal[2][2];
 
-				pal[0][0] = ((scanline_pixels1[x]&LCD_PALETTE_ALL) >> 4);
-				pal[1][0] = ((scanline_pixels1[x+1]&LCD_PALETTE_ALL) >> 4);
-				pal[0][1] = ((scanline_pixels2[x]&LCD_PALETTE_ALL) >> 4);
-				pal[1][1] = ((scanline_pixels2[x+1]&LCD_PALETTE_ALL) >> 4);
+				if (screen_handheld == 0)
+				{
+					for (unsigned int x = 0; x < LCD_WIDTH; x+=2)
+					{
+						grid[0][0] = ((scanline_pixels1[x] & 3) << 1);
+						grid[2][0] = ((scanline_pixels1[x+1] & 3) << 1);
+						grid[1][0] = ((grid[0][0] + grid[2][0]) >> 1);
 
-				screen_pixel_lcd_raw(pos_x, pos_y, selected_palette_lcd[pal[0][0]][grid[0][0]]);
-				screen_pixel_lcd_raw(pos_x, pos_y+1, selected_palette_lcd[pal[0][0]][grid[0][1]]);
-				screen_pixel_lcd_raw(pos_x, pos_y+2, selected_palette_lcd[pal[1][0]][grid[0][2]]);
+						grid[0][2] = ((scanline_pixels2[x] & 3) << 1);
+						grid[2][2] = ((scanline_pixels2[x+1] & 3) << 1);
+						grid[1][2] = ((grid[0][2] + grid[2][2]) >> 1);
 
-				pos_x++;
+						grid[0][1] = ((grid[0][0] + grid[0][2]) >> 1);
+						grid[1][1] = ((grid[1][0] + grid[1][2]) >> 1);
+						grid[2][1] = ((grid[2][0] + grid[2][2]) >> 1);
 
-				screen_pixel_lcd_raw(pos_x, pos_y, selected_palette_lcd[pal[0][0]][grid[1][0]]);
-				screen_pixel_lcd_raw(pos_x, pos_y+1, selected_palette_lcd[pal[0][0]][grid[1][1]]);
-				screen_pixel_lcd_raw(pos_x, pos_y+2, selected_palette_lcd[pal[1][0]][grid[1][2]]);
+						pal[0][0] = ((scanline_pixels1[x]&LCD_PALETTE_ALL) >> 4);
+						pal[1][0] = ((scanline_pixels1[x+1]&LCD_PALETTE_ALL) >> 4);
+						pal[0][1] = ((scanline_pixels2[x]&LCD_PALETTE_ALL) >> 4);
+						pal[1][1] = ((scanline_pixels2[x+1]&LCD_PALETTE_ALL) >> 4);
 
-				pos_x++;
+						screen_pixel_vga_raw(pos_x, pos_y, selected_palette_vga[pal[0][0]][grid[0][0]]);
+						screen_pixel_vga_raw(pos_x, pos_y+1, selected_palette_vga[pal[0][0]][grid[0][1]]);
+						screen_pixel_vga_raw(pos_x, pos_y+2, selected_palette_vga[pal[1][0]][grid[0][2]]);
 
-				screen_pixel_lcd_raw(pos_x, pos_y, selected_palette_lcd[pal[0][1]][grid[2][0]]);
-				screen_pixel_lcd_raw(pos_x, pos_y+1, selected_palette_lcd[pal[0][1]][grid[2][1]]);
-				screen_pixel_lcd_raw(pos_x, pos_y+2, selected_palette_lcd[pal[1][1]][grid[2][2]]);
+						pos_x++;
 
-				pos_x++;
+						screen_pixel_vga_raw(pos_x, pos_y, selected_palette_vga[pal[0][0]][grid[1][0]]);
+						screen_pixel_vga_raw(pos_x, pos_y+1, selected_palette_vga[pal[0][0]][grid[1][1]]);
+						screen_pixel_vga_raw(pos_x, pos_y+2, selected_palette_vga[pal[1][0]][grid[1][2]]);
+
+						pos_x++;
+
+						screen_pixel_vga_raw(pos_x, pos_y, selected_palette_vga[pal[0][1]][grid[2][0]]);
+						screen_pixel_vga_raw(pos_x, pos_y+1, selected_palette_vga[pal[0][1]][grid[2][1]]);
+						screen_pixel_vga_raw(pos_x, pos_y+2, selected_palette_vga[pal[1][1]][grid[2][2]]);
+
+						pos_x++;
+					}
+				}
+				else
+				{
+					for (unsigned int x = 0; x < LCD_WIDTH; x+=2)
+					{
+						grid[0][0] = ((scanline_pixels1[x] & 3) << 1);
+						grid[2][0] = ((scanline_pixels1[x+1] & 3) << 1);
+						grid[1][0] = ((grid[0][0] + grid[2][0]) >> 1);
+
+						grid[0][2] = ((scanline_pixels2[x] & 3) << 1);
+						grid[2][2] = ((scanline_pixels2[x+1] & 3) << 1);
+						grid[1][2] = ((grid[0][2] + grid[2][2]) >> 1);
+
+						grid[0][1] = ((grid[0][0] + grid[0][2]) >> 1);
+						grid[1][1] = ((grid[1][0] + grid[1][2]) >> 1);
+						grid[2][1] = ((grid[2][0] + grid[2][2]) >> 1);
+
+						pal[0][0] = ((scanline_pixels1[x]&LCD_PALETTE_ALL) >> 4);
+						pal[1][0] = ((scanline_pixels1[x+1]&LCD_PALETTE_ALL) >> 4);
+						pal[0][1] = ((scanline_pixels2[x]&LCD_PALETTE_ALL) >> 4);
+						pal[1][1] = ((scanline_pixels2[x+1]&LCD_PALETTE_ALL) >> 4);
+
+						screen_pixel_lcd_raw(pos_x, pos_y, selected_palette_lcd[pal[0][0]][grid[0][0]]);
+						screen_pixel_lcd_raw(pos_x, pos_y+1, selected_palette_lcd[pal[0][0]][grid[0][1]]);
+						screen_pixel_lcd_raw(pos_x, pos_y+2, selected_palette_lcd[pal[1][0]][grid[0][2]]);
+
+						pos_x++;
+
+						screen_pixel_lcd_raw(pos_x, pos_y, selected_palette_lcd[pal[0][0]][grid[1][0]]);
+						screen_pixel_lcd_raw(pos_x, pos_y+1, selected_palette_lcd[pal[0][0]][grid[1][1]]);
+						screen_pixel_lcd_raw(pos_x, pos_y+2, selected_palette_lcd[pal[1][0]][grid[1][2]]);
+
+						pos_x++;
+
+						screen_pixel_lcd_raw(pos_x, pos_y, selected_palette_lcd[pal[0][1]][grid[2][0]]);
+						screen_pixel_lcd_raw(pos_x, pos_y+1, selected_palette_lcd[pal[0][1]][grid[2][1]]);
+						screen_pixel_lcd_raw(pos_x, pos_y+2, selected_palette_lcd[pal[1][1]][grid[2][2]]);
+
+						pos_x++;
+					}
+				}
+			}
+			else // GBC palettes for DMG
+			{
+				unsigned long orig_pix[2][2];
+				
+				unsigned long comp_red[2][2], comp_green[2][2], comp_blue[2][2];
+				
+				unsigned long blend_red[5], blend_green[5], blend_blue[5];
+
+				unsigned short pos_x = 8;
+				unsigned short pos_y = 12 + scanline_count;
+
+				if (screen_handheld == 0)
+				{
+					for (unsigned int x = 0; x < LCD_WIDTH; x+=2)
+					{
+						orig_pix[0][0] = selected_palette_vga[(scanline_pixels1[(x)] & LCD_PALETTE_ALL) >> 4][((scanline_pixels1[(x)] & 3)<<1)];
+						orig_pix[1][0] = selected_palette_vga[(scanline_pixels1[(x+1)] & LCD_PALETTE_ALL) >> 4][((scanline_pixels1[(x+1)] & 3)<<1)];
+						orig_pix[0][1] = selected_palette_vga[(scanline_pixels1[(x)] & LCD_PALETTE_ALL) >> 4][((scanline_pixels2[(x)] & 3)<<1)];
+						orig_pix[1][1] = selected_palette_vga[(scanline_pixels1[(x+1)] & LCD_PALETTE_ALL) >> 4][((scanline_pixels2[(x+1)] & 3)<<1)];
+						
+						comp_red[0][0] = (orig_pix[0][0] & 0xE0);
+						comp_green[0][0] = (orig_pix[0][0] & 0x1C);
+						comp_blue[0][0] = (orig_pix[0][0] & 0x03);
+
+						comp_red[1][0] = (orig_pix[1][0] & 0xE0);
+						comp_green[1][0] = (orig_pix[1][0] & 0x1C);
+						comp_blue[1][0] = (orig_pix[1][0] & 0x03);
+						
+						comp_red[0][1] = (orig_pix[0][1] & 0xE0);
+						comp_green[0][1] = (orig_pix[0][1] & 0x1C);
+						comp_blue[0][1] = (orig_pix[0][1] & 0x03);
+						
+						comp_red[1][1] = (orig_pix[1][1] & 0xE0);
+						comp_green[1][1] = (orig_pix[1][1] & 0x1C);
+						comp_blue[1][1] = (orig_pix[1][1] & 0x03);
+
+						blend_red[0] = (((comp_red[0][0] + comp_red[1][0]) >> 1) & 0xE0);
+						blend_green[0] = (((comp_green[0][0] + comp_green[1][0]) >> 1) & 0x1C);
+						blend_blue[0] = (((comp_blue[0][0] + comp_blue[1][0]) >> 1) & 0x03);
+
+						blend_red[1] = (((comp_red[0][1] + comp_red[1][1]) >> 1) & 0xE0);
+						blend_green[1] = (((comp_green[0][1] + comp_green[1][1]) >> 1) & 0x1C);
+						blend_blue[1] = (((comp_blue[0][1] + comp_blue[1][1]) >> 1) & 0x03);
+
+						blend_red[2] = (((comp_red[0][0] + comp_red[0][1]) >> 1) & 0xE0);
+						blend_green[2] = (((comp_green[0][0] + comp_green[0][1]) >> 1) & 0x1C);
+						blend_blue[2] = (((comp_blue[0][0] + comp_blue[0][1]) >> 1) & 0x03);
+
+						blend_red[3] = (((comp_red[1][0] + comp_red[1][1]) >> 1) & 0xE0);
+						blend_green[3] = (((comp_green[1][0] + comp_green[1][1]) >> 1) & 0x1C);
+						blend_blue[3] = (((comp_blue[1][0] + comp_blue[1][1]) >> 1) & 0x03);
+
+						blend_red[4] = (((blend_red[0] + blend_red[1] + blend_red[2] + blend_red[3]) >> 2) & 0xE0);
+						blend_green[4] = (((blend_green[0] + blend_green[1] + blend_green[2] + blend_green[3]) >> 2) & 0x1C);
+						blend_blue[4] = (((blend_blue[0] + blend_blue[1] + blend_blue[2] + blend_blue[3]) >> 2) & 0x03);
+
+						screen_pixel_vga_raw(pos_x, pos_y, (unsigned char)(comp_red[0][0] | comp_green[0][0] | comp_blue[0][0]));
+						screen_pixel_vga_raw(pos_x, pos_y+1, (unsigned char)(blend_red[2] | blend_green[2] | blend_blue[2]));
+						screen_pixel_vga_raw(pos_x, pos_y+2, (unsigned char)(comp_red[0][1] | comp_green[0][1] | comp_blue[0][1]));
+
+						pos_x++;
+
+						screen_pixel_vga_raw(pos_x, pos_y, (unsigned char)(blend_red[0] | blend_green[0] | blend_blue[0]));
+						screen_pixel_vga_raw(pos_x, pos_y+1, (unsigned char)(blend_red[4] | blend_green[4] | blend_blue[4]));
+						screen_pixel_vga_raw(pos_x, pos_y+2, (unsigned char)(blend_red[1] | blend_green[1] | blend_blue[1]));
+
+						pos_x++;
+
+						screen_pixel_vga_raw(pos_x, pos_y, (unsigned char)(comp_red[1][0] | comp_green[1][0] | comp_blue[1][0]));
+						screen_pixel_vga_raw(pos_x, pos_y+1, (unsigned char)(blend_red[3] | blend_green[3] | blend_blue[3]));
+						screen_pixel_vga_raw(pos_x, pos_y+2, (unsigned char)(comp_red[1][1] | comp_green[1][1] | comp_blue[1][1]));
+
+						pos_x++;
+					}
+				}
+				else
+				{
+					for (unsigned int x = 0; x < LCD_WIDTH; x+=2)
+					{
+						orig_pix[0][0] = selected_palette_lcd[(scanline_pixels1[(x)] & LCD_PALETTE_ALL) >> 4][((scanline_pixels1[(x)] & 3)<<1)];
+						orig_pix[1][0] = selected_palette_lcd[(scanline_pixels1[(x+1)] & LCD_PALETTE_ALL) >> 4][((scanline_pixels1[(x+1)] & 3)<<1)];
+						orig_pix[0][1] = selected_palette_lcd[(scanline_pixels1[(x)] & LCD_PALETTE_ALL) >> 4][((scanline_pixels2[(x)] & 3)<<1)];
+						orig_pix[1][1] = selected_palette_lcd[(scanline_pixels1[(x+1)] & LCD_PALETTE_ALL) >> 4][((scanline_pixels2[(x+1)] & 3)<<1)];
+						
+						comp_red[0][0] = (orig_pix[0][0] & 0x001C);
+						comp_green[0][0] = (orig_pix[0][0] & 0x0700);
+						comp_blue[0][0] = (orig_pix[0][0] & 0xC000);
+
+						comp_red[1][0] = (orig_pix[1][0] & 0x001C);
+						comp_green[1][0] = (orig_pix[1][0] & 0x0700);
+						comp_blue[1][0] = (orig_pix[1][0] & 0xC000);
+						
+						comp_red[0][1] = (orig_pix[0][1] & 0x001C);
+						comp_green[0][1] = (orig_pix[0][1] & 0x0700);
+						comp_blue[0][1] = (orig_pix[0][1] & 0xC000);
+						
+						comp_red[1][1] = (orig_pix[1][1] & 0x001C);
+						comp_green[1][1] = (orig_pix[1][1] & 0x0700);
+						comp_blue[1][1] = (orig_pix[1][1] & 0xC000);
+
+						blend_red[0] = (((comp_red[0][0] + comp_red[1][0]) >> 1) & 0x001C);
+						blend_green[0] = (((comp_green[0][0] + comp_green[1][0]) >> 1) & 0x0700);
+						blend_blue[0] = (((comp_blue[0][0] + comp_blue[1][0]) >> 1) & 0xC000);
+
+						blend_red[1] = (((comp_red[0][1] + comp_red[1][1]) >> 1) & 0x001C);
+						blend_green[1] = (((comp_green[0][1] + comp_green[1][1]) >> 1) & 0x0700);
+						blend_blue[1] = (((comp_blue[0][1] + comp_blue[1][1]) >> 1) & 0xC000);
+
+						blend_red[2] = (((comp_red[0][0] + comp_red[0][1]) >> 1) & 0x001C);
+						blend_green[2] = (((comp_green[0][0] + comp_green[0][1]) >> 1) & 0x0700);
+						blend_blue[2] = (((comp_blue[0][0] + comp_blue[0][1]) >> 1) & 0xC000);
+
+						blend_red[3] = (((comp_red[1][0] + comp_red[1][1]) >> 1) & 0x001C);
+						blend_green[3] = (((comp_green[1][0] + comp_green[1][1]) >> 1) & 0x0700);
+						blend_blue[3] = (((comp_blue[1][0] + comp_blue[1][1]) >> 1) & 0xC000);
+
+						blend_red[4] = (((blend_red[0] + blend_red[1] + blend_red[2] + blend_red[3]) >> 2) & 0x001C);
+						blend_green[4] = (((blend_green[0] + blend_green[1] + blend_green[2] + blend_green[3]) >> 2) & 0x0700);
+						blend_blue[4] = (((blend_blue[0] + blend_blue[1] + blend_blue[2] + blend_blue[3]) >> 2) & 0xC000);
+
+						screen_pixel_lcd_raw(pos_x, pos_y, (unsigned short)(comp_red[0][0] | comp_green[0][0] | comp_blue[0][0]));
+						screen_pixel_lcd_raw(pos_x, pos_y+1, (unsigned short)(blend_red[2] | blend_green[2] | blend_blue[2]));
+						screen_pixel_lcd_raw(pos_x, pos_y+2, (unsigned short)(comp_red[0][1] | comp_green[0][1] | comp_blue[0][1]));
+
+						pos_x++;
+
+						screen_pixel_lcd_raw(pos_x, pos_y, (unsigned short)(blend_red[0] | blend_green[0] | blend_blue[0]));
+						screen_pixel_lcd_raw(pos_x, pos_y+1, (unsigned short)(blend_red[4] | blend_green[4] | blend_blue[4]));
+						screen_pixel_lcd_raw(pos_x, pos_y+2, (unsigned short)(blend_red[1] | blend_green[1] | blend_blue[1]));
+
+						pos_x++;
+
+						screen_pixel_lcd_raw(pos_x, pos_y, (unsigned short)(comp_red[1][0] | comp_green[1][0] | comp_blue[1][0]));
+						screen_pixel_lcd_raw(pos_x, pos_y+1, (unsigned short)(blend_red[3] | blend_green[3] | blend_blue[3]));
+						screen_pixel_lcd_raw(pos_x, pos_y+2, (unsigned short)(comp_red[1][1] | comp_green[1][1] | comp_blue[1][1]));
+
+						pos_x++;
+					}
+				}
 			}
 		}
 	}
@@ -450,6 +753,7 @@ int PeanutGB()
 	unsigned char choice = 0;
 	unsigned char ps2_found = 0;
 
+/*
 	result = f_open(&file, "/DMG-BOOT.BIN", FA_READ);
 	if (result == 0)
 	{	
@@ -470,6 +774,10 @@ int PeanutGB()
 	{
 		SendString("Could not find DMG-BOOT.BIN file\n\r\\");
 	}
+*/
+	// instead of using DMG-BOOT above, just do this instead	
+	gb_set_boot_rom(&gb, gb_boot_rom_read);
+	gb_reset(&gb);
 
 	/* Set the RTC of the game cartridge. Only used by games that support it. */
 	{

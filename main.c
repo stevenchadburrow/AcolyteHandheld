@@ -1435,7 +1435,7 @@ void menu_display()
 	else if (cart_rom[0x0104] == 0xCE &&
 		cart_rom[0x0105] == 0xED &&
 		cart_rom[0x0106] == 0x66 &&
-		cart_rom[0x0107] == 0x66) // GB
+		cart_rom[0x0107] == 0x66) // GB/GBC
 	{
 		display_string(0x0000, 0x0000, " Return to Game\\");
 
@@ -1460,41 +1460,44 @@ void menu_display()
 		else if (screen_rate == 4) display_string(0x0040, 0x0020, "4:1 => 5:1\\");
 		else if (screen_rate == 5) display_string(0x0040, 0x0020, "5:1 => 1:1\\");
 		
-		if (scanline_scaled == 0) display_string(0x0000, 0x0028, " Scaling Disabled => Enabled\\");
-		else if (scanline_scaled == 1) display_string(0x0000, 0x0028, " Scaling Enabled => Disabled\\");
+		if (scanline_hack == 0) display_string(0x0000, 0x0028, " Hacks Disabled => Enabled\\");
+		else if (scanline_hack == 1) display_string(0x0000, 0x0028, " Hacks Enabled => Disabled\\");
 		
-		display_string(0x0000, 0x0030, " Palette \\");
+		if (scanline_scaled == 0) display_string(0x0000, 0x0030, " Scaling Disabled => Enabled\\");
+		else if (scanline_scaled == 1) display_string(0x0000, 0x0030, " Scaling Enabled => Disabled\\");
+		
+		display_string(0x0000, 0x0038, " Palette \\");
 		if (palette_num < 10)
 		{
-			display_character(0x0048, 0x0030, ' ');
-			display_character(0x0050, 0x0030, (char)(palette_num + '0'));
+			display_character(0x0048, 0x0038, ' ');
+			display_character(0x0050, 0x0038, (char)(palette_num + '0'));
 		}
 		else
 		{
-			display_character(0x0048, 0x0030, '1');
-			display_character(0x0050, 0x0030, (char)((palette_num % 10) + '0'));
+			display_character(0x0048, 0x0038, '1');
+			display_character(0x0050, 0x0038, (char)((palette_num % 10) + '0'));
 		}
-		display_string(0x0058, 0x0030, " => \\");
+		display_string(0x0058, 0x0038, " => \\");
 		if (palette_num >= 15)
 		{
-			display_character(0x0078, 0x0030, ' ');
-			display_character(0x0080, 0x0030, '0');
+			display_character(0x0078, 0x0038, ' ');
+			display_character(0x0080, 0x0038, '0');
 		}
 		else if (palette_num < 9)
 		{
-			display_character(0x0078, 0x0030, ' ');
-			display_character(0x0080, 0x0030, (char)((palette_num+1) + '0'));
+			display_character(0x0078, 0x0038, ' ');
+			display_character(0x0080, 0x0038, (char)((palette_num+1) + '0'));
 		}
 		else
 		{
-			display_character(0x0078, 0x0030, '1');
-			display_character(0x0080, 0x0030, (char)(((palette_num+1) % 10) + '0'));
+			display_character(0x0078, 0x0038, '1');
+			display_character(0x0080, 0x0038, (char)(((palette_num+1) % 10) + '0'));
 		}
 		
-		display_string(0x0000, 0x0038, " Load Game E\\");
-		display_string(0x0000, 0x0040, " Load Game F\\");
-		display_string(0x0000, 0x0048, " Save Game E\\");
-		display_string(0x0000, 0x0050, " Save Game F\\");
+		display_string(0x0000, 0x0040, " Load Game E\\");
+		display_string(0x0000, 0x0048, " Load Game F\\");
+		display_string(0x0000, 0x0050, " Save Game E\\");
+		display_string(0x0000, 0x0058, " Save Game F\\");
 	}
 	else // SEGA
 	{
@@ -1761,7 +1764,7 @@ void menu_function()
 		else if (cart_rom[0x0104] == 0xCE &&
 			cart_rom[0x0105] == 0xED &&
 			cart_rom[0x0106] == 0x66 &&
-			cart_rom[0x0107] == 0x66) // GB
+			cart_rom[0x0107] == 0x66) // GB/GBC
 		{
 			if (menu_pos == 0)
 			{
@@ -1803,17 +1806,22 @@ void menu_function()
 			}
 			else if (menu_pos == 5)
 			{
+				if (scanline_hack == 0) scanline_hack = 1;
+				else scanline_hack = 0;
+			}
+			else if (menu_pos == 6)
+			{
 				if (scanline_scaled == 0) scanline_scaled = 1;
 				else scanline_scaled = 0;
 			}
-			else if (menu_pos == 6)
+			else if (menu_pos == 7)
 			{
 				palette_num++;
 				if (palette_num >= 16) palette_num = 0;
 				auto_assign_palette(0, palette_num);
 				menu_wait = 0x0007FFFF;
 			}
-			else if (menu_pos == 7)
+			else if (menu_pos == 8)
 			{
 				gb_read_cart_ram_file("GAME-E.SAV");
 
@@ -1821,7 +1829,7 @@ void menu_function()
 
 				menu_loop = 0;
 			}
-			else if (menu_pos == 8)
+			else if (menu_pos == 9)
 			{
 				gb_read_cart_ram_file("GAME-F.SAV");
 
@@ -1829,7 +1837,7 @@ void menu_function()
 
 				menu_loop = 0;
 			}
-			else if (menu_pos == 9)
+			else if (menu_pos == 10)
 			{
 				gb_write_cart_ram_file("GAME-E.SAV");
 
@@ -1837,7 +1845,7 @@ void menu_function()
 
 				menu_loop = 0;
 			}
-			else if (menu_pos == 10)
+			else if (menu_pos == 11)
 			{
 				gb_write_cart_ram_file("GAME-F.SAV");
 
