@@ -37,22 +37,22 @@ uint8_t gb_rom_read(struct gb_s *gb, const uint_fast32_t addr)
 	return cart_rom[addr];
 }
 
+uint8_t gb_boot_rom_read(struct gb_s *gb, const uint_fast16_t addr)
+{
+	return boot_rom[addr];
+}
+
 // Returns a byte from the cartridge RAM at the given address.
 uint8_t gb_cart_ram_read(struct gb_s *gb, const uint_fast32_t addr)
 {
-	return cart_ram[addr];
+	return cart_ram[(addr&0x7FFF)];
 }
 
 // Writes a given byte to the cartridge RAM at the given address.
 void gb_cart_ram_write(struct gb_s *gb, const uint_fast32_t addr,
 		       const uint8_t val)
-{
-	cart_ram[addr] = val;
-}
-
-uint8_t gb_boot_rom_read(struct gb_s *gb, const uint_fast16_t addr)
-{
-	return boot_rom[addr];
+{	
+	cart_ram[(addr&0x7FFF)] = val;
 }
 
 unsigned char gb_write_cart_ram_file(char filename[16])
