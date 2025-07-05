@@ -24,10 +24,8 @@ Internal memory of 512KB of RAM and 2MB of Flash ROM<br>
 VGA 1024x768 resolution at 60 Hz with 256 colors or 65K colors<br>
 ILI9341 LCD 320x240 resolution with 65K colors<br>
 Effective resolution of NES emulator at 256x240, 3x integer scaled on VGA<br>
-Effective resolution of GB/GBC emulator at 160x144, 3x integer scaled on VGA<br>
-Effective resolution of SMS emulator at 256x192, 3x integer scaled on VGA<br>
-Effective resolution of GG emulator at 160x144, 3x integer scaled on VGA<br>
-Effective resolution of SG emulator at 256x192, 3x integer scaled on VGA<br>
+Effective resolution of GB/GBC/GG emulator at 160x144, 3x integer scaled on VGA<br>
+Effective resolution of SMS/SG emulator at 256x192, 3x integer scaled on VGA<br>
 
 <b>Audio</b>
 
@@ -37,7 +35,7 @@ Headphone jack and internal speaker<br>
 <b>HID</b>
 
 2x Sega Genesis controller ports<br>
-USB port for keyboard, mouse, or Xbox-360 controller<br>
+USB port for keyboard, mouse, or Xbox-360 type controller<br>
 14 mappable buttons on device<br>
 
 <b>File System</b>
