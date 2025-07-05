@@ -5442,6 +5442,13 @@ static void vdp_tick(struct SMS_Core* sms)
 		else if (screen_speed_dir == 2) // fast
 		{
 			frame_tally = 0;
+			
+			if (screen_sync >= 30)
+			{
+				screen_sync = 0;
+				
+				frame_tally = screen_rate;
+			}
 		}
     }
 

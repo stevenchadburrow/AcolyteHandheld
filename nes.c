@@ -5836,6 +5836,17 @@ debug_capture(2);
 
 		nes_buttons();
 		
+		if (ppu_frame_count >= loop_count)
+		{
+			ppu_frame_count = 0;
+
+			screen_flip();
+
+			nes_wait(loop_count);
+		}
+		
+		ppu_frame_count++;
+		
 		if (screen_speed_dir == 0) // slow
 		{
 			while (screen_speed_dir == 0) { }
@@ -5848,19 +5859,6 @@ debug_capture(2);
 			
 			nes_timer_flag = 1;
 		}
-		else if (screen_speed_dir == 1) // normal
-		{
-			if (ppu_frame_count >= loop_count)
-			{
-				ppu_frame_count = 0;
-
-				screen_flip();
-
-				nes_wait(loop_count);
-			}
-
-			ppu_frame_count++;
-		}
 		else if (screen_speed_dir == 2) // fast
 		{
 			nes_wait(0);
@@ -5868,6 +5866,13 @@ debug_capture(2);
 			ppu_frame_count = 0;
 			
 			nes_timer_flag = 1;
+			
+			if (screen_sync >= 30)
+			{
+				screen_sync = 0;
+				
+				ppu_frame_count = loop_count;
+			}
 		}
 		
 		ppu_tile_count = 0;

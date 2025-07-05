@@ -896,6 +896,13 @@ int PeanutGB(unsigned char core)
 		else if (screen_speed_dir == 2) // fast
 		{
 			frame_counter = 0;
+			
+			if (screen_sync >= 30)
+			{
+				screen_sync = 0;
+				
+				frame_counter = screen_rate;
+			}
 		}
 		
 		if (frame_counter >= screen_rate) // only draw every three frames
