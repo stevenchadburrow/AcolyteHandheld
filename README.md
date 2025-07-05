@@ -76,7 +76,7 @@ Supports SMS / GG / SB games on same emulator, with game save files<br>
 <a href="https://github.com/deltabeard/">https://github.com/deltabeard/</a> for a bunch of projects, including Peanut-GB and MiniGB-APU projects.<br>
 <a href="https://github.com/froggestspirit/Peanut-GB/">https://github.com/froggestspirit/</a> for froggestspirit's projects, including the GBC version of Peanut-GB.<br>
 <a href="https://github.com/ITotalJustice">https://github.com/ITotalJustice</a> for a bunch of projects, including TotalSMS and other emulators.<br>
-<a href="https://github.com/sebastiandine/openNES-Snake">https://github.com/sebastiandine/openNES-Snake</a> for Sebastian Dine's openNES Snake game (ROM hex code included in source code).<br>
+<a href="https://github.com/sebastiandine/openNES-Snake">https://github.com/sebastiandine/openNES-Snake</a> for Sebastian Dine's openNES Snake game (ROM in source).<br>
 <a href="https://hackaday.com/2025/06/19/game-boy-nes-why-not-both/">https://hackaday.com/2025/06/19/game-boy-nes-why-not-both/</a> for the Hack-A-Day article!<br>
 
 
