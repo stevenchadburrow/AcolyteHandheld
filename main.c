@@ -1069,7 +1069,7 @@ void audio_clear()
 #include "setup.c" 
 
 // comment out for quicker reprogramming
-//#include "game.c"
+#include "game.c"
 
 
 
@@ -1402,8 +1402,9 @@ void menu_display()
 		else if (screen_rate == 4) display_string(0x0040, 0x0020, "4:1 => 5:1\\");
 		else if (screen_rate == 5) display_string(0x0040, 0x0020, "5:1 => 1:1\\");
 		
-		if (nes_hack_vsync_flag == 0) display_string(0x0000, 0x0028, " Hacks Disabled => Enabled\\");
-		else if (nes_hack_vsync_flag == 1) display_string(0x0000, 0x0028, " Hacks Enabled => Disabled\\");
+		if (nes_hack_vsync_flag == 0 && nes_hack_sprite_priority == 0) display_string(0x0000, 0x0028, " Hacks None   => V-Sync\\");
+		else if (nes_hack_vsync_flag == 1 && nes_hack_sprite_priority == 0) display_string(0x0000, 0x0028, " Hacks V-Sync => Sprite\\");
+		else if (nes_hack_vsync_flag == 0 && nes_hack_sprite_priority == 1) display_string(0x0000, 0x0028, " Hacks Sprite => None  \\");
 		
 		display_string(0x0000, 0x0030, " Controllers \\");
 		if (controller_config == 1) display_string(0x0068, 0x0030, "1P => 2P\\");
@@ -1469,8 +1470,8 @@ void menu_display()
 		else if (screen_rate == 4) display_string(0x0040, 0x0020, "4:1 => 5:1\\");
 		else if (screen_rate == 5) display_string(0x0040, 0x0020, "5:1 => 1:1\\");
 		
-		if (scanline_hack == 0) display_string(0x0000, 0x0028, " Hacks Disabled => Enabled\\");
-		else if (scanline_hack == 1) display_string(0x0000, 0x0028, " Hacks Enabled => Disabled\\");
+		if (scanline_hack == 0) display_string(0x0000, 0x0028, " Hacks None   => Sprite\\");
+		else if (scanline_hack == 1) display_string(0x0000, 0x0028, " Hacks Sprite => None  \\");
 		
 		if (scanline_scaled == 0) display_string(0x0000, 0x0030, " Scaling Disabled => Enabled\\");
 		else if (scanline_scaled == 1) display_string(0x0000, 0x0030, " Scaling Enabled => Disabled\\");
@@ -1675,18 +1676,22 @@ void menu_function()
 			}
 			else if (menu_pos == 5)
 			{ 
-				if (nes_hack_vsync_flag == 0)
+				if (nes_hack_vsync_flag == 0 && nes_hack_sprite_priority == 0)
 				{
-					nes_hack_sprite_priority = 1;
 					nes_hack_vsync_flag = 1;
-					nes_hack_border_shrink = 0; // always disable
-				}
-				else if (nes_hack_vsync_flag == 1)
-				{
 					nes_hack_sprite_priority = 0;
-					nes_hack_vsync_flag = 0;
-					nes_hack_border_shrink = 0; // always disable
 				}
+				else if (nes_hack_vsync_flag == 1 && nes_hack_sprite_priority == 0)
+				{
+					nes_hack_vsync_flag = 0;
+					nes_hack_sprite_priority = 1;
+				}
+				else if (nes_hack_vsync_flag == 0 && nes_hack_sprite_priority == 1)
+				{
+					nes_hack_vsync_flag = 0;
+					nes_hack_sprite_priority = 0;
+				}
+				nes_hack_border_shrink = 0; // always disable
 				menu_wait = 0x0007FFFF;
 			}
 			else if (menu_pos == 6)
