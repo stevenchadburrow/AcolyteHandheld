@@ -120,29 +120,39 @@ https://github.com/ITotalJustice/TotalSMS
 
 ****
 
-For openNES Snake:
+For LJ65:
 
-Copyright (c) 2016-2017 Sebastian Dine
+Copyright (c) 2009 Damian Yerrick
 
-This software is provided 'as-is', without any express or implied warranty.
-In no event will the authors be held liable for any damages arising from
-the use of this software.
+This manual is under the following license:
 
-Permission is granted to anyone to use this software for any purpose,
-including commercial applications, and to alter it and redistribute it
-freely, subject to the following restrictions:
+  This work is provided 'as-is', without any express or implied
+  warranty. In no event will the authors be held liable for any
+  damages arising from the use of this work.
 
-1. The origin of this software must not be misrepresented; you must not
-claim that you wrote the original software. If you use this software in
-a product, an acknowledgment in the product documentation would be
-appreciated but is not required.
+  Permission is granted to anyone to use this work for any
+  purpose, including commercial applications, and to alter it and
+  redistribute it freely, subject to the following restrictions:
 
-2. Altered source versions must be plainly marked as such, and must not
-be misrepresented as being the original software.
+   1. The origin of this work must not be misrepresented; you
+      must not claim that you wrote the original work. If you use
+      this work in a product, an acknowledgment in the product
+      documentation would be appreciated but is not required.
+   2. Altered source versions must be plainly marked as such,
+      and must not be misrepresented as being the original work.
+   3. This notice may not be removed or altered from any
+      source distribution.
 
-3. This notice may not be removed or altered from any source distribution.
+  The term "source" refers to the preferred form of a work for making
+  changes to it. 
 
-https://github.com/sebastiandine/openNES-Snake
+The LJ65 software described by this manual is distributed under
+the GNU General Public License, version 2 or later, with ABSOLUTELY
+NO WARRANTY.  See GPL.txt for details.
+
+LJ65 is not a Tetris product and is not endorsed by Tetris Holding.
+
+https://github.com/bfirsh/jsnes/tree/master/roms/lj65
 
 ****
 
