@@ -75,7 +75,7 @@ Supports SMS / GG / SB games on same emulator, with game save files<br>
 <a href="https://github.com/deltabeard/">https://github.com/deltabeard/</a> for a bunch of projects, including Peanut-GB and MiniGB-APU projects.<br>
 <a href="https://github.com/froggestspirit/">https://github.com/froggestspirit/</a> for a bunch of projects, including the GBC version of Peanut-GB.<br>
 <a href="https://github.com/ITotalJustice/">https://github.com/ITotalJustice/</a> for a bunch of projects, including TotalSMS and other emulators.<br>
-<a href="https://github.com/sebastiandine/">https://github.com/sebastiandine/</a> for a bunch of projects, including the openNES games (ROM in source).<br>
+<a href="https://github.com/bfirsh/jsnes/tree/master/roms/lj65">https://github.com/bfirsh/jsnes/tree/master/roms/lj65</a> for LJ65 download and license (ROM in source).<br>
 <a href="https://hackaday.com/2025/06/19/game-boy-nes-why-not-both/">https://hackaday.com/2025/06/19/game-boy-nes-why-not-both/</a> for the Hack-A-Day article!<br>
 
 <b>Pictures</b>
