@@ -87,6 +87,8 @@ void __attribute__((optimize("O0"))) Setup()
 	// joy-select specifics
 	PORTKbits.RK6 = 0; // ground when not floating
 	TRISKbits.TRISK6 = 1; // high when floating
+	
+	controller_mode = 1;
 
 	// set oscillator and timers
 	SYSKEY = 0x0; // reset

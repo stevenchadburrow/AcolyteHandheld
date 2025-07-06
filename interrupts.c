@@ -75,58 +75,118 @@ volatile void update_controllers()
 			{
 				screen_speed_dir = 1;
 				
-				if (TRISKbits.TRISK6 > 0)
+				if (controller_mapping == 0) // default Genesis controllers
 				{
-					controller_status_1 = (controller_status_1 & 0x0C);
-					
-					if (controller_detect_1 > 0)
+					if (controller_mode > 0)
 					{
-						controller_status_1 = controller_status_1 | 
-							((!PORTKbits.RK0) << 4) | // up
-							((!PORTKbits.RK1) << 5) | // down
-							((!PORTKbits.RK2) << 6) | // left
-							((!PORTKbits.RK3) << 7) | // right
-							((!PORTKbits.RK4) << 1) | // B
-							((!PORTKbits.RK5)); // A
-					}
+						controller_status_1 = (controller_status_1 & 0x0C);
 
-					if (controller_detect_2 > 0)
+						if (controller_detect_1 > 0)
+						{
+							controller_status_1 = controller_status_1 | 
+								((!PORTKbits.RK0) << 4) | // up
+								((!PORTKbits.RK1) << 5) | // down
+								((!PORTKbits.RK2) << 6) | // left
+								((!PORTKbits.RK3) << 7) | // right
+								((!PORTKbits.RK4) << 1) | // B
+								((!PORTKbits.RK5)); // A
+						}
+
+						if (controller_detect_2 > 0)
+						{
+							controller_status_1 = controller_status_1 | 
+								((!PORTFbits.RF0) << 4) | // up
+								((!PORTFbits.RF1) << 5) | // down
+								((!PORTFbits.RF2) << 6) | // left
+								((!PORTFbits.RF4) << 7) | // right
+								((!PORTFbits.RF5) << 1) | // B
+								((!PORTFbits.RF8)); // A
+						}
+					}
+					else
 					{
-						controller_status_1 = controller_status_1 | 
-							((!PORTFbits.RF0) << 4) | // up
-							((!PORTFbits.RF1) << 5) | // down
-							((!PORTFbits.RF2) << 6) | // left
-							((!PORTFbits.RF4) << 7) | // right
-							((!PORTFbits.RF5) << 1) | // B
-							((!PORTFbits.RF8)); // A
+						if ((!PORTKbits.RK2) && (!PORTKbits.RK3) && PORTKbits.RK0 && PORTKbits.RK1)
+						{
+							controller_detect_1 = 0x01;
+						}
+
+						if ((!PORTFbits.RF2) && (!PORTFbits.RF4) && PORTFbits.RF0 && PORTFbits.RF1)
+						{
+							controller_detect_2 = 0x01;
+						}
+
+						controller_status_1 = (controller_status_1 & 0xF3);
+
+						if (controller_detect_1 > 0)
+						{
+							controller_status_1 = controller_status_1 |
+								((!PORTKbits.RK4) << 2) | // select
+								((!PORTKbits.RK5) << 3); // start
+						}
+
+						if (controller_detect_2 > 0)
+						{
+							controller_status_1 = controller_status_1 |
+								((!PORTFbits.RF5) << 2) | // select
+								((!PORTFbits.RF8) << 3); // start
+						}
 					}
 				}
-				else
+				else // GameTank controller layout
 				{
-					if ((!PORTKbits.RK2) && (!PORTKbits.RK3) && PORTKbits.RK0 && PORTKbits.RK1)
+					if (controller_mode > 0)
 					{
-						controller_detect_1 = 0x01;
-					}
-					
-					if ((!PORTFbits.RF2) && (!PORTFbits.RF4) && PORTFbits.RF0 && PORTFbits.RF1)
-					{
-						controller_detect_2 = 0x01;
-					}
-					
-					controller_status_1 = (controller_status_1 & 0xF3);
+						controller_status_1 = (controller_status_1 & 0x0C);
 
-					if (controller_detect_1 > 0)
-					{
-						controller_status_1 = controller_status_1 |
-							((!PORTKbits.RK4) << 2) | // select
-							((!PORTKbits.RK5) << 3); // start
-					}
+						if (controller_detect_1 > 0)
+						{
+							controller_status_1 = controller_status_1 | 
+								((!PORTKbits.RK0) << 4) | // up
+								((!PORTKbits.RK1) << 5) | // down
+								((!PORTKbits.RK2) << 6) | // left
+								((!PORTKbits.RK3) << 7) | // right
+								((!PORTKbits.RK4)) | // A
+								((!PORTKbits.RK5) << 2); // select
+						}
 
-					if (controller_detect_2 > 0)
+						if (controller_detect_2 > 0)
+						{
+							controller_status_1 = controller_status_1 | 
+								((!PORTFbits.RF0) << 4) | // up
+								((!PORTFbits.RF1) << 5) | // down
+								((!PORTFbits.RF2) << 6) | // left
+								((!PORTFbits.RF4) << 7) | // right
+								((!PORTFbits.RF5)) | // A
+								((!PORTFbits.RF8) << 2); // select
+						}
+					}
+					else
 					{
-						controller_status_1 = controller_status_1 |
-							((!PORTFbits.RF5) << 2) | // select
-							((!PORTFbits.RF8) << 3); // start
+						if ((!PORTKbits.RK2) && (!PORTKbits.RK3) && PORTKbits.RK0 && PORTKbits.RK1)
+						{
+							controller_detect_1 = 0x01;
+						}
+
+						if ((!PORTFbits.RF2) && (!PORTFbits.RF4) && PORTFbits.RF0 && PORTFbits.RF1)
+						{
+							controller_detect_2 = 0x01;
+						}
+
+						controller_status_1 = (controller_status_1 & 0xF3);
+
+						if (controller_detect_1 > 0)
+						{
+							controller_status_1 = controller_status_1 |
+								((!PORTKbits.RK4) << 1) | // B
+								((!PORTKbits.RK5) << 3); // start
+						}
+
+						if (controller_detect_2 > 0)
+						{
+							controller_status_1 = controller_status_1 |
+								((!PORTFbits.RF5) << 1) | // B
+								((!PORTFbits.RF8) << 3); // start
+						}
 					}
 				}
 
@@ -236,68 +296,142 @@ volatile void update_controllers()
 			{
 				screen_speed_dir = 1;
 				
-				if (TRISKbits.TRISK6 > 0)
+				if (controller_mapping == 0) // default Genesis controllers
 				{
-					controller_status_2 = (controller_status_2 & 0x0C);
-
-					if (controller_detect_2 > 0)
+					if (controller_mode > 0)
 					{
-						controller_status_2 = controller_status_2 | 
-							((!PORTFbits.RF0) << 4) | // up
-							((!PORTFbits.RF1) << 5) | // down
-							((!PORTFbits.RF2) << 6) | // left
-							((!PORTFbits.RF4) << 7) | // right
-							((!PORTFbits.RF5) << 1) | // B
-							((!PORTFbits.RF8)); // A
+						controller_status_2 = (controller_status_2 & 0x0C);
+
+						if (controller_detect_2 > 0)
+						{
+							controller_status_2 = controller_status_2 | 
+								((!PORTFbits.RF0) << 4) | // up
+								((!PORTFbits.RF1) << 5) | // down
+								((!PORTFbits.RF2) << 6) | // left
+								((!PORTFbits.RF4) << 7) | // right
+								((!PORTFbits.RF5) << 1) | // B
+								((!PORTFbits.RF8)); // A
+						}
+					}
+					else
+					{
+						if ((!PORTFbits.RF2) && (!PORTFbits.RF4) && PORTFbits.RF0 && PORTFbits.RF1)
+						{
+							controller_detect_2 = 0x01;
+						}
+
+						if (controller_detect_2 > 0)
+						{
+							controller_status_2 = (controller_status_2 & 0xF3);
+
+							controller_status_2 = controller_status_2 |
+								((!PORTFbits.RF5) << 2) | // select
+								((!PORTFbits.RF8) << 3); // start
+						}
 					}
 				}
-				else
+				else // GameTank controller layout
 				{
-					if ((!PORTFbits.RF2) && (!PORTFbits.RF4) && PORTFbits.RF0 && PORTFbits.RF1)
+					if (controller_mode > 0)
 					{
-						controller_detect_2 = 0x01;
-					}
-					
-					if (controller_detect_2 > 0)
-					{
-						controller_status_2 = (controller_status_2 & 0xF3);
+						controller_status_2 = (controller_status_2 & 0x0C);
 
-						controller_status_2 = controller_status_2 |
-							((!PORTFbits.RF5) << 2) | // select
-							((!PORTFbits.RF8) << 3); // start
+						if (controller_detect_2 > 0)
+						{
+							controller_status_2 = controller_status_2 | 
+								((!PORTFbits.RF0) << 4) | // up
+								((!PORTFbits.RF1) << 5) | // down
+								((!PORTFbits.RF2) << 6) | // left
+								((!PORTFbits.RF4) << 7) | // right
+								((!PORTFbits.RF5)) | // A
+								((!PORTFbits.RF8) << 2); // select
+						}
+					}
+					else
+					{
+						if ((!PORTFbits.RF2) && (!PORTFbits.RF4) && PORTFbits.RF0 && PORTFbits.RF1)
+						{
+							controller_detect_2 = 0x01;
+						}
+
+						if (controller_detect_2 > 0)
+						{
+							controller_status_2 = (controller_status_2 & 0xF3);
+
+							controller_status_2 = controller_status_2 |
+								((!PORTFbits.RF5) << 1) | // B
+								((!PORTFbits.RF8) << 3); // start
+						}
 					}
 				}
 			}
 			
-			if (TRISKbits.TRISK6 > 0)
+			if (controller_mapping == 0) // default Genesis controller
 			{
-				controller_status_1 = (controller_status_1 & 0x0C);
-
-				if (controller_detect_1 > 0)
+				if (controller_mode > 0)
 				{
-					controller_status_1 = controller_status_1 | 
-						((!PORTKbits.RK0) << 4) | // up
-						((!PORTKbits.RK1) << 5) | // down
-						((!PORTKbits.RK2) << 6) | // left
-						((!PORTKbits.RK3) << 7) | // right
-						((!PORTKbits.RK4) << 1) | // B
-						((!PORTKbits.RK5)); // A
+					controller_status_1 = (controller_status_1 & 0x0C);
+
+					if (controller_detect_1 > 0)
+					{
+						controller_status_1 = controller_status_1 | 
+							((!PORTKbits.RK0) << 4) | // up
+							((!PORTKbits.RK1) << 5) | // down
+							((!PORTKbits.RK2) << 6) | // left
+							((!PORTKbits.RK3) << 7) | // right
+							((!PORTKbits.RK4) << 1) | // B
+							((!PORTKbits.RK5)); // A
+					}
+				}
+				else
+				{
+					if ((!PORTKbits.RK2) && (!PORTKbits.RK3) && PORTKbits.RK0 && PORTKbits.RK1)
+					{
+						controller_detect_1 = 0x01;
+					}
+
+					controller_status_1 = (controller_status_1 & 0xF3);
+
+					if (controller_detect_1 > 0)
+					{
+						controller_status_1 = controller_status_1 |
+							((!PORTKbits.RK4) << 2) | // select
+							((!PORTKbits.RK5) << 3); // start
+					}
 				}
 			}
-			else
+			else // GameTank controller layout
 			{
-				if ((!PORTKbits.RK2) && (!PORTKbits.RK3) && PORTKbits.RK0 && PORTKbits.RK1)
+				if (controller_mode > 0)
 				{
-					controller_detect_1 = 0x01;
-				}
-				
-				controller_status_1 = (controller_status_1 & 0xF3);
+					controller_status_1 = (controller_status_1 & 0x0C);
 
-				if (controller_detect_1 > 0)
+					if (controller_detect_1 > 0)
+					{
+						controller_status_1 = controller_status_1 | 
+							((!PORTKbits.RK0) << 4) | // up
+							((!PORTKbits.RK1) << 5) | // down
+							((!PORTKbits.RK2) << 6) | // left
+							((!PORTKbits.RK3) << 7) | // right
+							((!PORTKbits.RK4)) | // A
+							((!PORTKbits.RK5) << 2); // select
+					}
+				}
+				else
 				{
-					controller_status_1 = controller_status_1 |
-						((!PORTKbits.RK4) << 2) | // select
-						((!PORTKbits.RK5) << 3); // start
+					if ((!PORTKbits.RK2) && (!PORTKbits.RK3) && PORTKbits.RK0 && PORTKbits.RK1)
+					{
+						controller_detect_1 = 0x01;
+					}
+
+					controller_status_1 = (controller_status_1 & 0xF3);
+
+					if (controller_detect_1 > 0)
+					{
+						controller_status_1 = controller_status_1 |
+							((!PORTKbits.RK4) << 1) | // B
+							((!PORTKbits.RK5) << 3); // start
+					}
 				}
 			}
 
@@ -397,60 +531,122 @@ volatile void update_controllers()
 			
 			screen_speed_dir = 1;
 			
-			if (TRISKbits.TRISK6 > 0)
+			if (controller_mapping == 0) // default Genesis controller
 			{
-				controller_status_2 = (controller_status_2 & 0x0C);
-				controller_status_3 = (controller_status_3 & 0x0C);
-
-				if (controller_detect_1 > 0)
+				if (controller_mode > 0)
 				{
-					controller_status_2 = controller_status_2 | 
-						((!PORTKbits.RK0) << 4) | // up
-						((!PORTKbits.RK1) << 5) | // down
-						((!PORTKbits.RK2) << 6) | // left
-						((!PORTKbits.RK3) << 7) | // right
-						((!PORTKbits.RK4) << 1) | // B
-						((!PORTKbits.RK5)); // A
+					controller_status_2 = (controller_status_2 & 0x0C);
+					controller_status_3 = (controller_status_3 & 0x0C);
+
+					if (controller_detect_1 > 0)
+					{
+						controller_status_2 = controller_status_2 | 
+							((!PORTKbits.RK0) << 4) | // up
+							((!PORTKbits.RK1) << 5) | // down
+							((!PORTKbits.RK2) << 6) | // left
+							((!PORTKbits.RK3) << 7) | // right
+							((!PORTKbits.RK4) << 1) | // B
+							((!PORTKbits.RK5)); // A
+					}
+
+					if (controller_detect_2 > 0)
+					{
+						controller_status_3 = controller_status_3 | 
+							((!PORTFbits.RF0) << 4) | // up
+							((!PORTFbits.RF1) << 5) | // down
+							((!PORTFbits.RF2) << 6) | // left
+							((!PORTFbits.RF4) << 7) | // right
+							((!PORTFbits.RF5) << 1) | // B
+							((!PORTFbits.RF8)); // A
+					}
 				}
-
-				if (controller_detect_2 > 0)
+				else
 				{
-					controller_status_3 = controller_status_3 | 
-						((!PORTFbits.RF0) << 4) | // up
-						((!PORTFbits.RF1) << 5) | // down
-						((!PORTFbits.RF2) << 6) | // left
-						((!PORTFbits.RF4) << 7) | // right
-						((!PORTFbits.RF5) << 1) | // B
-						((!PORTFbits.RF8)); // A
+					if ((!PORTKbits.RK2) && (!PORTKbits.RK3) && PORTKbits.RK0 && PORTKbits.RK1)
+					{
+						controller_detect_1 = 0x01;
+					}
+
+					if ((!PORTFbits.RF2) && (!PORTFbits.RF4) && PORTFbits.RF0 && PORTFbits.RF1)
+					{
+						controller_detect_2 = 0x01;
+					}
+
+					controller_status_2 = (controller_status_2 & 0xF3);
+					controller_status_3 = (controller_status_3 & 0xF3);
+
+					if (controller_detect_1 > 0)
+					{
+						controller_status_2 = controller_status_2 |
+							((!PORTKbits.RK4) << 2) | // select
+							((!PORTKbits.RK5) << 3); // start
+					}
+
+					if (controller_detect_2 > 0)
+					{
+						controller_status_3 = controller_status_3 |
+							((!PORTFbits.RF5) << 2) | // select
+							((!PORTFbits.RF8) << 3); // start
+					}
 				}
 			}
-			else
+			else // GameTank controller layout
 			{
-				if ((!PORTKbits.RK2) && (!PORTKbits.RK3) && PORTKbits.RK0 && PORTKbits.RK1)
+				if (controller_mode > 0)
 				{
-					controller_detect_1 = 0x01;
-				}
-					
-				if ((!PORTFbits.RF2) && (!PORTFbits.RF4) && PORTFbits.RF0 && PORTFbits.RF1)
-				{
-					controller_detect_2 = 0x01;
-				}
-				
-				controller_status_2 = (controller_status_2 & 0xF3);
-				controller_status_3 = (controller_status_3 & 0xF3);
+					controller_status_2 = (controller_status_2 & 0x0C);
+					controller_status_3 = (controller_status_3 & 0x0C);
 
-				if (controller_detect_1 > 0)
-				{
-					controller_status_2 = controller_status_2 |
-						((!PORTKbits.RK4) << 2) | // select
-						((!PORTKbits.RK5) << 3); // start
+					if (controller_detect_1 > 0)
+					{
+						controller_status_2 = controller_status_2 | 
+							((!PORTKbits.RK0) << 4) | // up
+							((!PORTKbits.RK1) << 5) | // down
+							((!PORTKbits.RK2) << 6) | // left
+							((!PORTKbits.RK3) << 7) | // right
+							((!PORTKbits.RK4)) | // A
+							((!PORTKbits.RK5) << 2); // select
+					}
+
+					if (controller_detect_2 > 0)
+					{
+						controller_status_3 = controller_status_3 | 
+							((!PORTFbits.RF0) << 4) | // up
+							((!PORTFbits.RF1) << 5) | // down
+							((!PORTFbits.RF2) << 6) | // left
+							((!PORTFbits.RF4) << 7) | // right
+							((!PORTFbits.RF5)) | // A
+							((!PORTFbits.RF8) << 2); // select
+					}
 				}
-				
-				if (controller_detect_2 > 0)
+				else
 				{
-					controller_status_3 = controller_status_3 |
-						((!PORTFbits.RF5) << 2) | // select
-						((!PORTFbits.RF8) << 3); // start
+					if ((!PORTKbits.RK2) && (!PORTKbits.RK3) && PORTKbits.RK0 && PORTKbits.RK1)
+					{
+						controller_detect_1 = 0x01;
+					}
+
+					if ((!PORTFbits.RF2) && (!PORTFbits.RF4) && PORTFbits.RF0 && PORTFbits.RF1)
+					{
+						controller_detect_2 = 0x01;
+					}
+
+					controller_status_2 = (controller_status_2 & 0xF3);
+					controller_status_3 = (controller_status_3 & 0xF3);
+
+					if (controller_detect_1 > 0)
+					{
+						controller_status_2 = controller_status_2 |
+							((!PORTKbits.RK4) << 1) | // B
+							((!PORTKbits.RK5) << 3); // start
+					}
+
+					if (controller_detect_2 > 0)
+					{
+						controller_status_3 = controller_status_3 |
+							((!PORTFbits.RF5) << 1) | // B
+							((!PORTFbits.RF8) << 3); // start
+					}
 				}
 			}
 			
@@ -505,22 +701,30 @@ volatile void update_controllers()
 			}
 		}
 		
-		if (TRISKbits.TRISK6 > 0)
+		if (controller_mode > 0)
 		{
 			PORTKbits.RK6 = 0; // ground when not floating
 			TRISKbits.TRISK6 = 0;
+			
+			controller_mode = 0;
 		}
 		else
 		{
 			PORTKbits.RK6 = 0;
 			TRISKbits.TRISK6 = 1; // high when floating
+			
+			controller_mode = 1;
 		}
 	}
 	else
 	{
 		PORTKbits.RK6 = 0;
 		TRISKbits.TRISK6 = 1; // high when floating
+		
+		controller_mode = 1;
 	}
+	
+	if (screen_speed_mode == 0) screen_speed_dir = 1; 
 }
 
 volatile void __attribute__((vector(_OUTPUT_COMPARE_3_VECTOR), interrupt(ipl7srs))) oc3_handler()

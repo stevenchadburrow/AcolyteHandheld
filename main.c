@@ -567,6 +567,7 @@ volatile unsigned char controller_status_3 = 0x00;
 volatile unsigned char controller_status_4 = 0x00;
 volatile unsigned char controller_enable = 0;
 volatile unsigned char controller_config = 4; // 1, 2, or 4 players
+volatile unsigned char controller_mode = 1; // tri-state pulled high, or grounded?
 volatile unsigned char controller_detect_1 = 0x00;
 volatile unsigned char controller_detect_2 = 0x00;
 volatile unsigned char controller_mapping = 0; // change accordingly
@@ -2610,6 +2611,138 @@ int main()
 			}
 		}
 	}
+	
+	/*
+	screen_clear();
+	screen_flip();
+	
+	controller_detect_1 = 1;
+	controller_detect_2 = 1;
+	
+	unsigned long port_f = 0;
+	unsigned long port_k = 0;
+	
+	LATKbits.LATK6 = 0;
+	
+	while (1)
+	{
+		TRISKbits.TRISK6 = 1; // high when floating
+		
+		DelayMS(100);
+		
+		port_f = PORTF;
+		port_k = PORTK;
+		
+		for (unsigned short i=0; i<8; i++)
+		{
+			if (((port_f << i) & 0x8000) == 0x8000)
+			{
+				display_character(0x10+i*0x08, 0x10, '1');
+			}
+			else
+			{
+				display_character(0x10+i*0x08, 0x10, '0');
+			}
+		}
+		
+		for (unsigned short i=0; i<8; i++)
+		{
+			if (((port_f << (i+8)) & 0x8000) == 0x8000)
+			{
+				display_character(0x10+(i+10)*0x08, 0x10, '1');
+			}
+			else
+			{
+				display_character(0x10+(i+10)*0x08, 0x10, '0');
+			}
+		}
+		
+		for (unsigned short i=0; i<8; i++)
+		{
+			if (((port_k << i) & 0x8000) == 0x8000)
+			{
+				display_character(0x10+i*0x08, 0x20, '1');
+			}
+			else
+			{
+				display_character(0x10+i*0x08, 0x20, '0');
+			}
+		}
+		
+		for (unsigned short i=0; i<8; i++)
+		{
+			if (((port_k << (i+8)) & 0x8000) == 0x8000)
+			{
+				display_character(0x10+(i+10)*0x08, 0x20, '1');
+			}
+			else
+			{
+				display_character(0x10+(i+10)*0x08, 0x20, '0');
+			}
+		}
+		
+		DelayMS(100);
+
+		TRISKbits.TRISK6 = 0; // grounded
+		
+		DelayMS(100);
+
+		port_f = PORTF;
+		port_k = PORTK;
+		
+		for (unsigned short i=0; i<8; i++)
+		{
+			if (((port_f << i) & 0x8000) == 0x8000)
+			{
+				display_character(0x10+i*0x08, 0x30, '1');
+			}
+			else
+			{
+				display_character(0x10+i*0x08, 0x30, '0');
+			}
+		}
+		
+		for (unsigned short i=0; i<8; i++)
+		{
+			if (((port_f << (i+8)) & 0x8000) == 0x8000)
+			{
+				display_character(0x10+(i+10)*0x08, 0x30, '1');
+			}
+			else
+			{
+				display_character(0x10+(i+10)*0x08, 0x30, '0');
+			}
+		}
+		
+		for (unsigned short i=0; i<8; i++)
+		{
+			if (((port_k << i) & 0x8000) == 0x8000)
+			{
+				display_character(0x10+i*0x08, 0x40, '1');
+			}
+			else
+			{
+				display_character(0x10+i*0x08, 0x40, '0');
+			}
+		}
+		
+		for (unsigned short i=0; i<8; i++)
+		{
+			if (((port_k << (i+8)) & 0x8000) == 0x8000)
+			{
+				display_character(0x10+(i+10)*0x08, 0x40, '1');
+			}
+			else
+			{
+				display_character(0x10+(i+10)*0x08, 0x40, '0');
+			}
+		}
+		
+		DelayMS(100);
+		
+		screen_flip();
+	}
+	*/
 	
 	while (1)
 	{
