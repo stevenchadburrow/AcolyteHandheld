@@ -136,7 +136,7 @@ volatile void update_controllers()
 				{
 					if (controller_mode > 0)
 					{
-						controller_status_1 = (controller_status_1 & 0x0C);
+						controller_status_1 = (controller_status_1 & 0x0A);
 
 						if (controller_detect_1 > 0)
 						{
@@ -172,7 +172,7 @@ volatile void update_controllers()
 							controller_detect_2 = 0x01;
 						}
 
-						controller_status_1 = (controller_status_1 & 0xF3);
+						controller_status_1 = (controller_status_1 & 0xF5);
 
 						if (controller_detect_1 > 0)
 						{
@@ -334,7 +334,7 @@ volatile void update_controllers()
 				{
 					if (controller_mode > 0)
 					{
-						controller_status_2 = (controller_status_2 & 0x0C);
+						controller_status_2 = (controller_status_2 & 0x0A);
 
 						if (controller_detect_2 > 0)
 						{
@@ -356,7 +356,7 @@ volatile void update_controllers()
 
 						if (controller_detect_2 > 0)
 						{
-							controller_status_2 = (controller_status_2 & 0xF3);
+							controller_status_2 = (controller_status_2 & 0xF5);
 
 							controller_status_2 = controller_status_2 |
 								((!PORTFbits.RF5) << 1) | // B
@@ -404,7 +404,7 @@ volatile void update_controllers()
 			{
 				if (controller_mode > 0)
 				{
-					controller_status_1 = (controller_status_1 & 0x0C);
+					controller_status_1 = (controller_status_1 & 0x0A);
 
 					if (controller_detect_1 > 0)
 					{
@@ -424,7 +424,7 @@ volatile void update_controllers()
 						controller_detect_1 = 0x01;
 					}
 
-					controller_status_1 = (controller_status_1 & 0xF3);
+					controller_status_1 = (controller_status_1 & 0xF5);
 
 					if (controller_detect_1 > 0)
 					{
@@ -594,8 +594,8 @@ volatile void update_controllers()
 			{
 				if (controller_mode > 0)
 				{
-					controller_status_2 = (controller_status_2 & 0x0C);
-					controller_status_3 = (controller_status_3 & 0x0C);
+					controller_status_2 = (controller_status_2 & 0x0A);
+					controller_status_3 = (controller_status_3 & 0x0A);
 
 					if (controller_detect_1 > 0)
 					{
@@ -631,8 +631,8 @@ volatile void update_controllers()
 						controller_detect_2 = 0x01;
 					}
 
-					controller_status_2 = (controller_status_2 & 0xF3);
-					controller_status_3 = (controller_status_3 & 0xF3);
+					controller_status_2 = (controller_status_2 & 0xF5);
+					controller_status_3 = (controller_status_3 & 0xF5);
 
 					if (controller_detect_1 > 0)
 					{
