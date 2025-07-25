@@ -344,8 +344,6 @@ RK7	MENU
 #define SYS_FREQ 260000000 // Running at 260MHz
 
 
-
-
 unsigned long VirtToPhys(volatile void* p) // changed 'const' to 'volatile'
 {
 	return (long)p<0?((long)p&0x1fffffffL):(unsigned long)((unsigned long*)p+0x40000000L);
@@ -456,7 +454,6 @@ void _general_exception_handler(void)
 
 
 
-
 //#define DEBUG // uncomment to send debug info through UART
 
 #ifdef DEBUG
@@ -502,9 +499,9 @@ void debug_report()
 
 
 volatile unsigned char *cart_rom = (volatile unsigned char *)0x9D100000;
-volatile unsigned char __attribute__((address(0x8006E000))) sys_ram[8192]; // used for NES and TotalSMS
-volatile unsigned char __attribute__((address(0x80070000))) cart_ram[32768]; // used as normal ram for PeanutGB and TotalSMS
-volatile unsigned char __attribute__((address(0x80078000))) ext_ram[32768]; // used for pointing memory address for NES, GB, and SMS
+volatile unsigned char sys_ram[8192]; // used for NES and TotalSMS
+volatile unsigned char cart_ram[32768]; // used as normal ram for PeanutGB and TotalSMS
+volatile unsigned char ext_ram[32768]; // used for pointing memory address for NES, GB, and SMS
 
 #define SCREEN_X 768
 #define SCREEN_X2 1536
@@ -514,8 +511,8 @@ volatile unsigned char __attribute__((address(0x80078000))) ext_ram[32768]; // u
 #define SCREEN_XY2 368640
 
 // video
-volatile unsigned char __attribute__((coherent,address(0x80010000))) screen_buffer[SCREEN_XY2]; // visible portion of screen
-volatile unsigned char __attribute__((coherent,address(0x8006A000))) screen_line[SCREEN_X]; // black line
+volatile unsigned char __attribute__((coherent,address(0x80026000))) screen_buffer[SCREEN_XY2]; // visible portion of screen
+volatile unsigned char __attribute__((coherent,address(0x80025800))) screen_line[SCREEN_X]; // black line
 volatile unsigned char screen_frame = 0;
 volatile unsigned int screen_scanline = 771; //1025; // start of vertical sync
 volatile unsigned char __attribute__((coherent)) screen_zero[2] = { 0x00, 0x00 }; // zero value for black
@@ -552,8 +549,8 @@ void screen_pixel_lcd_raw(unsigned short pos_x, unsigned short pos_y, unsigned s
 #define AUDIO_EXT 2048
 
 // audio
-volatile unsigned char __attribute__((coherent,address(0x8006D000))) audio_buffer[AUDIO_EXT];
-volatile unsigned char __attribute__((coherent,address(0x8006D800))) audio_buffer2[AUDIO_EXT];
+volatile unsigned char __attribute__((coherent,address(0x80024800))) audio_buffer[AUDIO_EXT];
+volatile unsigned char __attribute__((coherent,address(0x80025000))) audio_buffer2[AUDIO_EXT];
 volatile unsigned int audio_read = 0;
 volatile unsigned int audio_write = 0;
 volatile unsigned int audio_enable = 0;
@@ -847,6 +844,27 @@ void display_inverse(unsigned int x, unsigned int y, unsigned char value)
 		}
 	}
 };
+
+void display_hex_byte(unsigned int x, unsigned int y, unsigned char value)
+{
+	if ((value & 0xF0) >= 0xA0)
+	{
+		display_character(x, y, (unsigned char)(((value & 0xF0) >> 4) - 10 + 'A'));
+	}
+	else
+	{
+		display_character(x, y, (unsigned char)(((value & 0xF0) >> 4) + '0'));
+	}
+	
+	if ((value & 0x0F) >= 0x0A)
+	{
+		display_character(x + 0x08, y, (unsigned char)(((value & 0x0F)) - 10 + 'A'));
+	}
+	else
+	{
+		display_character(x + 0x08, y, (unsigned char)(((value & 0x0F)) + '0'));
+	}
+};
 	
 void display_decimal(unsigned int x, unsigned int y, unsigned int value)
 {
@@ -950,6 +968,7 @@ const unsigned char usb_conversion[256] =
 #include "diskio.c"
 
 #include "nvm.c"
+//#include "sqi.c"
 
 void screen_flip()
 {
@@ -1070,7 +1089,7 @@ void audio_clear()
 #include "setup.c" 
 
 // comment out for quicker reprogramming
-#include "game.c" 
+//#include "game.c" 
 
 
 
@@ -2147,10 +2166,6 @@ int main()
 	DelayMS(100);
 	DelayMS(100);
 	DelayMS(100);
-	
-	// if menu button held down during boot, start in VGA
-	if ((!PORTKbits.RK7)) screen_handheld = 0;
-	else screen_handheld = 1;
 
 	USBHostSetup();
 	
@@ -2160,11 +2175,27 @@ int main()
 	DelayMS(100);
 	DelayMS(100);
 	
+	// if menu button held down during boot, start in VGA
+	//if ((!PORTKbits.RK7)) screen_handheld = 0;
+	//else screen_handheld = 1;
+	
 	// if controllers detected, start in VGA
-	if (controller_detect_1 > 0 || controller_detect_2 > 0) screen_handheld = 0;
+	//if (controller_detect_1 > 0 || controller_detect_2 > 0) screen_handheld = 0;
 	
 	// if USB device detected, start in VGA
-	if (usbhost_connected > 0) screen_handheld = 0;
+	//if (usbhost_connected > 0) screen_handheld = 0;
+	
+	// VGA detect pin
+	if (PORTAbits.RA0 == 0) screen_handheld = 0;
+	else screen_handheld = 1;
+	
+	/*
+	// initialize SQI chip
+	if (sqi_initialize() == 0)
+	{
+		//SendString("SQI Not Initialized!\n\r\\");
+	}
+	*/
 	
 	screen_clear();
 	audio_clear();
@@ -2612,7 +2643,33 @@ int main()
 		}
 	}
 	
-	/*
+	
+	while (1)
+	{
+		// blink LED
+		PORTDbits.RD7 = 0;
+		DelayMS(100);
+		DelayMS(100);
+		DelayMS(100);
+		DelayMS(100);
+		DelayMS(100);
+		
+		//SendChar('0');
+
+		PORTDbits.RD7 = 1;
+		DelayMS(100);
+		DelayMS(100);
+		DelayMS(100);
+		DelayMS(100);
+		DelayMS(100);
+		
+		//SendChar('1');
+	}
+}
+
+
+
+/*
 	screen_clear();
 	screen_flip();
 	
@@ -2742,29 +2799,200 @@ int main()
 		
 		screen_flip();
 	}
-	*/
+*/
+
+/*	
+	unsigned long val = 0;
 	
-	while (1)
+	// initialize
+	CFGCONbits.TROEN=0; // Disable trace outputs (SQI pins share trace)
+	// REFCLKO2 is assumed to be SQI base clock
+	if (!REFO2CONbits.ACTIVE) // Check if REFCLKO2 divider circuit is active
 	{
-		// blink LED
-		PORTDbits.RD7 = 0;
-		DelayMS(100);
-		DelayMS(100);
-		DelayMS(100);
-		DelayMS(100);
-		DelayMS(100);
-		
-		//SendChar('0');
-
-		PORTDbits.RD7 = 1;
-		DelayMS(100);
-		DelayMS(100);
-		DelayMS(100);
-		DelayMS(100);
-		DelayMS(100);
-		
-		//SendChar('1');
+		REFO2CONbits.RODIV=0x0020; // Set the divider (SYSCLK/128)
+		REFO2CONbits.ON=1; // Turn on the divider circuit
+		while (REFO2CONbits.DIVSWEN) { } // Wait for divide to occur
+		REFO2CONbits.OE=1; // Output enable
 	}
-}
+	SQI1CFG = 0x00810000; // Enable and reset SQI
+	SQI1CFG = 0x01A01019; // Configure SQI
+	SQI1CLKCON |= (0x20 << 8); // Set divider to (TBC/128)
+	SQI1CLKCON = 0x00000001; // Enable clock circuit
+	while (!SQI1CLKCONbits.STABLE) { } // Wait for clock to be stable
+	DelayMS(100); // short delay just in case
+	SQI1THR = 0x00000004; // Set control buffer threshold to 4 bytes
+	SQI1INTTHR = 0x00000404; // Set SQI TX/RX interrupt threshold to 4 bytes
+	SQI1CMDTHR = 0x00000404; // Set SQI TX/RX command threshold to 4 bytes
+	
+	// make sure in single mode
+	SQI1CON = 0x00410001; // NOP (single lane)
+	SQI1CON = 0x00410001; // NOP (single lane)
+	SQI1CON = 0x00410001; // NOP (single lane)
+	SQI1CON = 0x00410001; // Reset Quad (single lane), in-case soft reset
+	SQI1TXDATA = 0xFF000000; // 0x00, 0x00, 0x00, then 0xFF
+	while ((SQI1STAT1 & 0x3F0000) < 0x200000) { } // wait for transmit to finish
 
+	// read id
+	SQI1CON = 0x00410001; // NOP (single lane)
+	SQI1CON = 0x00410001; // NOP (single lane)
+	SQI1CON = 0x00410001; // NOP (single lane)
+	SQI1CON = 0x00010001; // ID (single lane), SST26VFxxxAB should yield 0xBF4226BF
+	SQI1TXDATA = 0x9F000000; // 0x00, 0x00, 0x00, then 0x9F
+	while ((SQI1STAT1 & 0x3F0000) < 0x200000) { } // wait for transmit to finish
+	SQI1CON = 0x00420004; // read 4 bytes (single lane)
+	while ((SQI1STAT1 & 0x3F) < 4) { } // wait for receive to finish
+	val = SQI1RXDATA; // read value in buffer
+	
+	SendLongHex(val);
+	SendChar('.');
+	DelayMS(10);
 
+	// switch to quad mode
+	SQI1CON = 0x00410001; // NOP (single lane)
+	SQI1CON = 0x00410001; // NOP (single lane)
+	SQI1CON = 0x00410001; // NOP (single lane)
+	SQI1CON = 0x00410001; // EQIO (single lane), can now use quad lane
+	SQI1TXDATA = 0x38000000; // 0x00, 0x00, 0x00, then 0x38
+	while ((SQI1STAT1 & 0x3F0000) < 0x200000) { } // wait for transmit to finish
+	
+	// read id
+	SQI1CON = 0x00490001; // NOP
+	SQI1CON = 0x00490001; // NOP
+	SQI1CON = 0x00090002; // ID
+	SQI1TXDATA = 0x00AF0000; // 0x00, 0x00, 0xAF, then 0x00
+	while ((SQI1STAT1 & 0x3F0000) < 0x200000) { } // wait for transmit to finish
+	SQI1CON = 0x004A0004; // read 4 bytes, SST26VFxxxAB should yield 0xBF4226BF
+	while ((SQI1STAT1 & 0x3F) < 4) { } // wait for receive to finish
+	val = SQI1RXDATA; // read value in buffer
+	
+	SendLongHex(val);
+	SendChar('.');
+	DelayMS(10);
+	
+	// unlock
+	SQI1CON = 0x00490001; // NOP
+	SQI1CON = 0x00490001; // NOP 
+	SQI1CON = 0x00490001; // Write Enable
+	SQI1CON = 0x00490001; // Global Protect Unlock
+	SQI1TXDATA = 0x98060000; // 0x00, 0x00, 0x06, then 0x98
+	while ((SQI1STAT1 & 0x3F0000) < 0x200000) { } // wait for transmit to finish
+	
+	// write status/config
+	SQI1CON = 0x00490001; // Write Enable
+	SQI1CON = 0x00490003; // Write Status (doesn't work) and Config (to 0x0A)
+	SQI1TXDATA = 0x0A000106; // 0x06, 0x01, 0x00, then 0x0A
+	while ((SQI1STAT1 & 0x3F0000) < 0x200000) { } // wait for transmit to finish
+	
+	// read status
+	SQI1CON = 0x00490001; // NOP
+	SQI1CON = 0x00490001; // NOP
+	SQI1CON = 0x00090002; // Read Status, SST26VFxxxAB should have 0x00000000
+	SQI1TXDATA = 0x00050000; // 0x00, 0x00, 0x05, then 0x00
+	while ((SQI1STAT1 & 0x3F0000) < 0x200000) { } // wait for transmit to finish
+	SQI1CON = 0x004A0004; // read 4 bytes
+	while ((SQI1STAT1 & 0x3F) < 4) { } // wait for receive to finish
+	val = SQI1RXDATA; // read value in buffer
+	
+	SendLongHex(val);
+	SendChar('.');
+	DelayMS(10);
+	
+	// read config
+	SQI1CON = 0x00490001; // NOP
+	SQI1CON = 0x00490001; // NOP
+	SQI1CON = 0x00090002; // Read Config, SST26VFxxxAB should have 0x0A0A0A0A
+	SQI1TXDATA = 0x00350000; // 0x00, 0x00, 0x35, then 0x00
+	while ((SQI1STAT1 & 0x3F0000) < 0x200000) { } // wait for transmit to finish
+	SQI1CON = 0x004A0004; // read 4 bytes
+	while ((SQI1STAT1 & 0x3F) < 4) { } // wait for receive to finish
+	val = SQI1RXDATA; // read value in buffer
+	
+	SendLongHex(val);
+	SendChar('.');
+	DelayMS(10);
+	
+	// erase
+	SQI1CON = 0x00490001; // NOP
+	SQI1CON = 0x00490001; // NOP
+	SQI1CON = 0x00490001; // Write Enable
+	SQI1CON = 0x00490001; // Erase Chip
+	SQI1TXDATA = 0xC7060000; // 0x00, 0x00, 0x06, then 0xC7
+	while ((SQI1STAT1 & 0x3F0000) < 0x200000) { } // wait for transmit to finish
+	DelayMS(100);
+	DelayMS(100);
+	DelayMS(100);
+	DelayMS(100);
+	DelayMS(100); // long delay
+	
+	// write
+	SQI1CON = 0x00490001; // NOP
+	SQI1CON = 0x00490001; // NOP
+	SQI1CON = 0x00490001; // NOP
+	SQI1CON = 0x00490001; // Write Enable
+	SQI1TXDATA = 0x06000000; // 0x00, 0x00, 0x00, then 0x06
+	while ((SQI1STAT1 & 0x3F0000) < 0x200000) { } // wait for transmit to finish
+	SQI1CON = 0x00090004; // Page Program and Address
+	SQI1TXDATA = 0x00000002; // 0x02, 0x00, 0x00, then 0x00
+	while ((SQI1STAT1 & 0x3F0000) < 0x200000) { } // wait for transmit to finish
+	SQI1CON = 0x00090004; // write 4 bytes
+	SQI1TXDATA = 0xFF005AA5; // random vales
+	while ((SQI1STAT1 & 0x3F0000) < 0x200000) { } // wait for transmit to finish
+	SQI1CON = 0x00090004; // write 4 bytes
+	SQI1TXDATA = 0xDEADBEEF; // random values
+	while ((SQI1STAT1 & 0x3F0000) < 0x200000) { } // wait for transmit to finish
+	SQI1CON = 0x00090004; // write 4 bytes
+	SQI1TXDATA = 0x03020100; // random values
+	while ((SQI1STAT1 & 0x3F0000) < 0x200000) { } // wait for transmit to finish
+	SQI1CON = 0x00490004; // write 4 bytes (and stop)
+	SQI1TXDATA = 0x07060504; // random values
+	while ((SQI1STAT1 & 0x3F0000) < 0x200000) { } // wait for transmit to finish
+	DelayMS(100); // short delay is needed here!
+	
+	// read
+	SQI1CON = 0x00490001; // NOP
+	SQI1CON = 0x00090003; // Fast Read and 2x Address
+	SQI1TXDATA = 0x0000B00; // 0x00, 0x0B, 0x00, then 0x00
+	while ((SQI1STAT1 & 0x3F0000) < 0x200000) { } // wait for transmit to finish
+	SQI1CON = 0x00090004; // Last Address, Mode, and 2x Dummys
+	SQI1TXDATA = 0x00000000; // 0x00, 0x00, 0x00, then 0x00
+	while ((SQI1STAT1 & 0x3F0000) < 0x200000) { } // wait for transmit to finish
+	SQI1CON = 0x000A0004; // read 4 bytes
+	while ((SQI1STAT1 & 0x3F) < 4) { } // wait for receive to finish
+	val = SQI1RXDATA; // read value in buffer
+	
+	SendLongHex(val);
+	SendChar('.');
+	DelayMS(10);
+	
+	SQI1CON = 0x000A0004; // read 4 bytes
+	while ((SQI1STAT1 & 0x3F) < 4) { } // wait for receive to finish
+	val = SQI1RXDATA; // read value in buffer
+	
+	SendLongHex(val);
+	SendChar('.');
+	DelayMS(10);
+	
+	SQI1CON = 0x000A0004; // read 4 bytes
+	while ((SQI1STAT1 & 0x3F) < 4) { } // wait for receive to finish
+	val = SQI1RXDATA; // read value in buffer
+	
+	SendLongHex(val);
+	SendChar('.');
+	DelayMS(10);
+	
+	SQI1CON = 0x004A0004; // read 4 bytes (and stop)
+	while ((SQI1STAT1 & 0x3F) < 4) { } // wait for receive to finish
+	val = SQI1RXDATA; // read value in buffer
+	
+	SendLongHex(val);
+	SendChar('.');
+	DelayMS(10);
+	
+	// required after read command?
+	SQI1CON = 0x00490001; // Quad Reset, I think this is needed after 0x0B command?
+	SQI1CON = 0x00490001; // NOP
+	SQI1CON = 0x00490001; // NOP
+	SQI1CON = 0x00490001; // NOP
+	SQI1TXDATA = 0x000000FF; // 0xFF, 0x00, 0x00, then 0x00
+	while ((SQI1STAT1 & 0x3F0000) < 0x200000) { } // wait for transmit to finish
+*/

@@ -1130,7 +1130,8 @@ void __gb_write(struct gb_s *gb, const uint_fast16_t addr, const uint8_t val) {
             }
     }
 
-    (gb->gb_error)(gb, GB_INVALID_WRITE, addr);
+    //(gb->gb_error)(gb, GB_INVALID_WRITE, addr); // ignored
+    return;
 }
 
 uint8_t __gb_execute_cb(struct gb_s *gb) {
@@ -3772,6 +3773,19 @@ void gb_reset(struct gb_s *gb) {
     gb->cart_ram_bank = 0;
     gb->enable_cart_ram = 0;
     gb->cart_mode_select = 0;
+    
+    uint8_t hdr_chk;
+	hdr_chk = gb->gb_rom_read(gb, ROM_HEADER_CHECKSUM_LOC) != 0; // 0x014D
+
+	gb->cpu_reg.a = 0x01B0;
+    if (hdr_chk == 0) gb->cpu_reg.a = 0x0180;
+	gb->cpu_reg.bc = 0x0013;
+	gb->cpu_reg.de = 0x00D8;
+	gb->cpu_reg.hl = 0x014D;
+	gb->cpu_reg.sp = 0xFFFE;
+	gb->cpu_reg.pc = 0x0100;
+
+	gb->hram[0x50] = 0x01; // boot rom already executed
 
     /* Initialise CPU registers as though a DMG or CGB. */
     gb->cpu_reg.af = 0x01B0;
@@ -3912,6 +3926,7 @@ enum gb_init_error_e gb_init(struct gb_s *gb,
     /* Check if cartridge type is supported, and set MBC type. */
     {
         gb->cgb.cgbMode = (gb->gb_rom_read(gb, cgb_flag) & 0x80) >> 7;
+        
         const uint8_t mbc_value = gb->gb_rom_read(gb, mbc_location);
 
         if (mbc_value > sizeof(cart_mbc) - 1 ||

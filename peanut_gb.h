@@ -3649,7 +3649,7 @@ void gb_reset(struct gb_s *gb)
 	if(gb->gb_boot_rom_read == NULL)
 	{
 		uint8_t hdr_chk;
-		hdr_chk = gb->gb_rom_read(gb, ROM_HEADER_CHECKSUM_LOC) != 0;
+		hdr_chk = gb->gb_rom_read(gb, ROM_HEADER_CHECKSUM_LOC) != 0; // 0x014D
 
 		gb->cpu_reg.a = 0x01;
 		gb->cpu_reg.f.f_bits.z = 1;
@@ -3665,7 +3665,7 @@ void gb_reset(struct gb_s *gb)
 		gb->hram_io[IO_DIV ] = 0xAB;
 		gb->hram_io[IO_LCDC] = 0x91;
 		gb->hram_io[IO_STAT] = 0x85;
-		gb->hram_io[IO_BOOT] = 0x01;
+		gb->hram_io[IO_BOOT] = 0x01; // 0x50
 
 		memset(gb->vram, 0x00, VRAM_SIZE);
 	}
@@ -3677,7 +3677,7 @@ void gb_reset(struct gb_s *gb)
 		gb->hram_io[IO_DIV ] = 0x00;
 		gb->hram_io[IO_LCDC] = 0x00;
 		gb->hram_io[IO_STAT] = 0x84;
-		gb->hram_io[IO_BOOT] = 0x00;
+		gb->hram_io[IO_BOOT] = 0x00; // 0x50
 	}
 
 	gb->counter.lcd_count = 0;

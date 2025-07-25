@@ -50,7 +50,7 @@ unsigned int NVMWriteQuadWord(unsigned long address,
 	return res;
 }
 
-unsigned int NVMBurnROM(char *filename)
+unsigned int NVMBurnROM(const char *filename)
 {
 	for (unsigned long i=0x1D100000; i<0x1D200000; i+=0x00001000) // pages are 0x1000
 	{
@@ -102,13 +102,13 @@ unsigned int NVMBurnROM(char *filename)
 		while (f_sync(&file) != 0) { }
 		while (f_close(&file) != 0) { }
 		
-		SendString("Finished rom at \\");
-		SendLongHex(addr);
-		SendString("\r\n\\");
+		//SendString("Finished rom at \\");
+		//SendLongHex(addr);
+		//SendString("\r\n\\");
 	}
 	else
 	{
-		SendString("Could not find rom file\n\r\\");
+		//SendString("Could not find rom file\n\r\\");
 	}
 	
 	DelayMS(1000);

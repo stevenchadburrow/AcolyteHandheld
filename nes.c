@@ -30,7 +30,7 @@ unsigned long nes_hack_vsync_flag = 0; // change this accordingly
 unsigned long nes_hack_sprite_priority = 0; // change this accordingly
 unsigned long nes_hack_border_shrink = 0; // change this accordingly
 
-unsigned long nes_loop_option = 4;
+unsigned long nes_loop_option = 0; // 0 through 4 really
 unsigned long nes_loop_max = 0;
 unsigned long nes_loop_detect = 0;
 unsigned long nes_loop_count = 0;
@@ -432,6 +432,8 @@ unsigned char nes_load(char *filename)
 // change for platform
 unsigned char nes_burn(char *directory, char *filename)
 {
+	//sqi_write(directory, filename);
+	
 	for (unsigned long i=0x1D100000; i<0x1D200000; i+=0x00001000) // pages are 0x1000
 	{
 		NVMErasePage(i);
@@ -500,6 +502,7 @@ unsigned char nes_burn(char *directory, char *filename)
 		nes_error(0x00);
 	}
 	
+	
 	DelayMS(1000);
 	
 	// soft reset system
@@ -511,7 +514,8 @@ unsigned char nes_burn(char *directory, char *filename)
 	RSWRST; // read from register to reset
 	while (1) { } // wait until reset occurs
 	
-	return flag; // never gets returned
+	//return flag; // never gets returned
+	return 0;
 }
 
 void nes_short_save(FIL *file, unsigned short val)
@@ -1314,8 +1318,13 @@ void nes_write_pal_ram(unsigned long addr, unsigned char val)
 	pal_ram[addr] = val;
 }
 
+unsigned long nes_cart_addr = 0;
+
 unsigned char nes_read_cart_rom(unsigned long addr)
 {
+	//sqi_prepare(addr);
+	//return (unsigned char)sqi_read();
+	
 	return (unsigned char)cart_rom[addr];
 }
 

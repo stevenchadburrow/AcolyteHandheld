@@ -11,6 +11,8 @@ volatile void update_usb()
 	}
 }
 
+//#define SOURCE_SELECT // comment to float select to 5V (in theory), uncomment to source select to 3.3V
+
 volatile void update_controllers()
 {
 	if (controller_enable > 0)
@@ -703,15 +705,20 @@ volatile void update_controllers()
 		
 		if (controller_mode > 0)
 		{
-			PORTKbits.RK6 = 0; // ground when not floating
+			PORTKbits.RK6 = 0; // ground select
 			TRISKbits.TRISK6 = 0;
 			
 			controller_mode = 0;
 		}
 		else
 		{
+#ifdef SOURCE_SELECT
+			PORTKbits.RK6 = 1; // source 3.3V, seems to work better?
+			TRISKbits.TRISK6 = 0;
+#else
 			PORTKbits.RK6 = 0;
-			TRISKbits.TRISK6 = 1; // high when floating
+			TRISKbits.TRISK6 = 1; // float to 5V, doesn't always work?
+#endif
 			
 			controller_mode = 1;
 		}
@@ -875,7 +882,7 @@ volatile void __attribute__((vector(_TIMER_8_VECTOR), interrupt(ipl3srs))) t8_ha
 		if (audio_bank == 0)
 		{
 			// 6-bit signed audio add 0x0080, unsigned add 0x0000
-			PORTA = (unsigned short)((unsigned char)(((audio_buffer[(audio_read)%AUDIO_LEN] & 0x00FC) * audio_volume) / 4) + 0xC000); // needs 0xC000 to not reset LCD
+			PORTA = (unsigned short)((unsigned char)((((audio_buffer[(audio_read)%AUDIO_LEN] & 0x00FC) >> 2) * audio_volume) / 4) + 0xC000); // needs 0xC000 to not reset LCD
 			PORTB = (unsigned short)((unsigned char)(((audio_buffer[(audio_read)%AUDIO_LEN] & 0x00FC) * audio_volume) / 4) + 0x0000); // doesn't matter
 
 			audio_read = audio_read + 1;
@@ -888,7 +895,7 @@ volatile void __attribute__((vector(_TIMER_8_VECTOR), interrupt(ipl3srs))) t8_ha
 		else if (audio_bank == 1)
 		{
 			// 6-bit signed audio add 0x0080, unsigned add 0x0000
-			PORTA = (unsigned short)((unsigned char)(((audio_buffer[(audio_read)%AUDIO_EXT] & 0x00FC) * audio_volume) / 4) + 0xC080); // needs 0xC000 to not reset LCD
+			PORTA = (unsigned short)((unsigned char)((((audio_buffer[(audio_read)%AUDIO_EXT] & 0x00FC) >> 2) * audio_volume) / 4) + 0xC020); // needs 0xC000 to not reset LCD
 			PORTB = (unsigned short)((unsigned char)(((audio_buffer[(audio_read)%AUDIO_EXT] & 0x00FC) * audio_volume) / 4) + 0x0080); // doesn't matter
 
 			audio_read = audio_read + 1;
@@ -901,7 +908,7 @@ volatile void __attribute__((vector(_TIMER_8_VECTOR), interrupt(ipl3srs))) t8_ha
 		else if (audio_bank == 2)
 		{
 			// 6-bit signed audio add 0x0080, unsigned add 0x0000
-			PORTA = (unsigned short)((unsigned char)(((audio_buffer2[(audio_read)%AUDIO_EXT] & 0x00FC) * audio_volume) / 4) + 0xC080); // needs 0xC000 to not reset LCD
+			PORTA = (unsigned short)((unsigned char)((((audio_buffer2[(audio_read)%AUDIO_EXT] & 0x00FC) >> 2) * audio_volume) / 4) + 0xC020); // needs 0xC000 to not reset LCD
 			PORTB = (unsigned short)((unsigned char)(((audio_buffer2[(audio_read)%AUDIO_EXT] & 0x00FC) * audio_volume) / 4) + 0x0080); // doesn't matter
 
 			audio_read = audio_read + 1;

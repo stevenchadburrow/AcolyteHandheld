@@ -69,17 +69,18 @@ void __attribute__((optimize("O0"))) Setup()
 	//cp0 |= 0x02; // K0 = Uncachable
 	_mtc0(16, 0, cp0);  
 	
-	 
 	// change tri-state on pins
+	TRISA = 0x0001; // VGA detect
+	CNPUA = 0x0001; // VGA detect
 	TRISB = 0xFF00; // buttons
 	CNPUB = 0xFF00; // buttons
 	TRISC = 0x4000; // usb-rx
 	CNPUC = 0xC000; // usb-tx/rx
-	TRISD = 0xF010; // buttons, ft232rl-rx
-	CNPUD = 0xF030; // buttons, ft232rl-tx/rx
+	TRISD = 0xF000; // buttons, ft232rl-rx
+	CNPUD = 0xF020; // buttons, ft232rl-tx/rx
 	TRISF = 0x013F; // joy-b, usbid
 	CNPUF = 0x0004; // usbid
-	TRISG = 0x0181; // tf-miso, spi-miso, uart-rx
+	TRISG = 0x0781; // tf-miso, spi-miso, uart-rx
 	CNPUG = 0x0003; // uart-tx/rx
 	TRISK = 0x00FF; // menu, joy-select, joy-a
 	CNPUK = 0x0080; // menu
@@ -103,7 +104,7 @@ void __attribute__((optimize("O0"))) Setup()
 	PB2DIV = 0x00008005; // change PB2 clock to 260 / 6 = 43.333 MHz for SPI and UART
 	PB3DIV = 0x00008000; // set OC and TMR clock division by 1
 	PB4DIV = 0x00008001; // divide by 2
-	PB5DIV = 0x00008001; // divide by 2
+	PB5DIV = 0x00008003; // divide by 4, used for SQI
 	//PB6DIV = 0x00008001; // divide by 2
 	PB7DIV = 0x00008000; // CPU clock divide by 1
 	SPLLCON = 0x01400201; // use PLL to bring external 24 MHz into 260 MHz
@@ -133,7 +134,7 @@ void __attribute__((optimize("O0"))) Setup()
 	RPD10R = 0x5; // SDO1 on pin RPD7 (mosi)
 	// SCK1 on RD1 (sclk)
 	// CS1 on RD9 (cs)
-	U2RXR = 0x4; // U2RX on pin RPD4 (uart rx)
+	//U2RXR = 0x4; // U2RX on pin RPD4 (uart rx)
 	RPD5R = 0x2; // U2TX on pin RPD5 (uart tx)
 	CFGCONbits.IOLOCK = 1; // PPS is locked
 	SYSKEY = 0x0; // re-lock
@@ -157,7 +158,7 @@ void __attribute__((optimize("O0"))) Setup()
 	U2STAbits.UTXISEL = 0x0; // Interrupt after one TX character is transmitted
 	U2STAbits.URXISEL = 0x0; // interrupt after one RX character is received
 	
-	U2STAbits.URXEN = 1; // enable RX
+	//U2STAbits.URXEN = 1; // enable RX
 	U2STAbits.UTXEN = 1; // enable TX
 	
 	IPC36bits.U2RXIP = 0x4; // U2RX interrupt priority level 4
@@ -165,7 +166,8 @@ void __attribute__((optimize("O0"))) Setup()
 	//IPC39bits.U2EIP = 0x4; // U2E interrupt priority level 4
 	//IPC39bits.U2EIS = 0x1; // U2E interrupt sub-priority level 1
 	IFS4bits.U2RXIF = 0;  // clear interrupt flag
-	IEC4bits.U2RXIE = 1; // U2RX interrupt on (set priority here?)
+	//IEC4bits.U2RXIE = 1; // U2RX interrupt on (set priority here?)
+	IEC4bits.U2RXIE = 0; // U2RX interrupt off
 	
 	U2MODEbits.ON = 1; // turn UART on
 	
