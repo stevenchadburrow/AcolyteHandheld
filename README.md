@@ -22,7 +22,7 @@ Soon to come: 4MB external parallel Flash ROM<br>
 
 <b>Video</b>
 
-VGA 1024x768 resolution at 60 Hz with 256 colors or 65K colors<br>
+VGA 1024x768 resolution at 70 Hz with 256 colors or 65K colors<br>
 ILI9341 LCD 320x240 resolution with 65K colors<br>
 Effective resolution of NES emulator at 256x240, 3x integer scaled on VGA<br>
 Effective resolution of GB/GBC/GG emulator at 160x144, 3x integer scaled on VGA<br>
