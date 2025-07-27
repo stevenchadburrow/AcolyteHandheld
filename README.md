@@ -8,7 +8,7 @@ The Acolyte Handheld is a portable PIC32MZ based game console.  It is programmed
   <li>Runs on a battery and is charged by a USB-C cable.</li>
   <li>Switchable between VGA and LCD displays without needing to reboot.</li>
   <li>Supports four players simultaneously through the use of additional controllers.</li>
-  <li>The built-in NES emulator has been tested with over 120+ games at this point, including but not limited to the list <a href="https://github.com/stevenchadburrow/AcolyteHandPICd32/tree/main/NES">here</a>.  As a benchmark, Super Mario Bros 3 currently runs full speed at 20 FPS.  My demo video of Super Mario Bros 3 can be found <a href="https://www.youtube.com/watch?v=WGrEMQLWrP4">here</a>.</li>
+  <li>The built-in NES emulator has been tested with over 120+ games at this point, including but not limited to the list <a href="https://github.com/stevenchadburrow/AcolyteHandPICd32/tree/main/NES">here</a>.  As a benchmark, Super Mario Bros 3 currently runs full speed at 30 FPS.  My demo video of Super Mario Bros 3 can be found <a href="https://www.youtube.com/watch?v=WGrEMQLWrP4">here</a>.</li>
   <li>The imported GB/GBC emulator is very accurate and runs games at full speed.</li>
   <li>The imported SMS/GG/SG emulator is very accurate and runs games at full speed.</li>
   <li>Custom built 3D printed enclosure and buttons.</li>
@@ -16,8 +16,9 @@ The Acolyte Handheld is a portable PIC32MZ based game console.  It is programmed
 
 <b>Specifications</b>
 
-Microchip PIC32MZ2048EFH144 running at 260 MHz (slightly overclocked)<br>
+Microchip PIC32MZ2048EFH144 running at 300 MHz (overclocked)<br>
 Internal memory of 512KB of RAM and 2MB of Flash ROM<br>
+Soon to come: 4MB external parallel Flash ROM<br>
 
 <b>Video</b>
 
