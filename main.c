@@ -499,9 +499,12 @@ void debug_report()
 
 
 volatile unsigned char *cart_rom = (volatile unsigned char *)0x9D100000;
-volatile unsigned char sys_ram[8192]; // used for NES and TotalSMS
-volatile unsigned char cart_ram[32768]; // used as normal ram for PeanutGB and TotalSMS
-volatile unsigned char ext_ram[32768]; // used for pointing memory address for NES, GB, and SMS
+volatile unsigned char sys_ram[8192]; // used for NES and SMS
+volatile unsigned char cart_ram[32768]; // used for NES, GB, and SMS
+volatile unsigned char ext_ram[32768]; // used for NES, GB, and SMS
+
+volatile unsigned long interrupt_count = 0; // used for frame timing
+
 
 #define SCREEN_X 768
 #define SCREEN_X2 1536
@@ -514,7 +517,7 @@ volatile unsigned char ext_ram[32768]; // used for pointing memory address for N
 volatile unsigned char __attribute__((coherent,address(0x80026000))) screen_buffer[SCREEN_XY2]; // visible portion of screen
 volatile unsigned char __attribute__((coherent,address(0x80025800))) screen_line[SCREEN_X]; // black line
 volatile unsigned char screen_frame = 0;
-volatile unsigned int screen_scanline = 771; //1025; // start of vertical sync
+volatile unsigned int screen_scanline = 771; // start of vertical sync
 volatile unsigned char __attribute__((coherent)) screen_zero[2] = { 0x00, 0x00 }; // zero value for black
 volatile unsigned char __attribute__((coherent)) screen_fill_color[2] = { 0x00, 0x00 }; // used in flood-fill function
 volatile unsigned char screen_handheld = 0; // 0 = VGA, 1 = LCD
@@ -2061,9 +2064,15 @@ void game_loop(unsigned char override)
 			controller_config = 2; // start with 2 players
 		}
 		
-		nes_timers();
+		nes_timer_reset();
 
 		nes_init();
+		
+		T8CON = 0x0000; // reset
+		T8CON = 0x0000; // prescale of 1:1, 16-bit
+		TMR8 = 0x0000; // zero out counter
+		PR8 = 0x6F9C; // approx three scanlines (minus one)
+		T8CONbits.ON = 1;
 
 		DelayMS(1000);
 
@@ -2085,6 +2094,12 @@ void game_loop(unsigned char override)
 	{
 		controller_config = 1; // only one player
 		
+		T8CON = 0x0000; // reset
+		T8CON = 0x0000; // prescale of 1:1, 16-bit
+		TMR8 = 0x0000; // zero out counter
+		PR8 = 0x1299; // approx twice per scanline (minus one)
+		T8CONbits.ON = 1;
+		
 		if (override == 2)
 		{
 			PeanutGB(0); // force DMG mode
@@ -2100,6 +2115,12 @@ void game_loop(unsigned char override)
 		cart_rom[0x7FF7] == 0x41) ||
 		(override == 4 || override == 5)) // SEGA
 	{
+		T8CON = 0x0000; // reset
+		T8CON = 0x0000; // prescale of 1:1, 16-bit
+		TMR8 = 0x0000; // zero out counter
+		PR8 = 0x6F9C; // approx three scanlines (minus one)
+		T8CONbits.ON = 1;
+		
 		if (((cart_rom[0x7FFF] & 0xF0) == 0x30 ||
 			(cart_rom[0x7FFF] & 0xF0) == 0x40) || override == 4)  // SMS
 		{
@@ -2127,6 +2148,12 @@ void game_loop(unsigned char override)
 	}
 	else 
 	{
+		T8CON = 0x0000; // reset
+		T8CON = 0x0000; // prescale of 1:1, 16-bit
+		TMR8 = 0x0000; // zero out counter
+		PR8 = 0x6F9C; // approx three scanlines (minus one)
+		T8CONbits.ON = 1;
+		
 		controller_config = 2; // two players
 		button_disable = 1; // disable pause/reset by default
 

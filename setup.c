@@ -101,13 +101,13 @@ void __attribute__((optimize("O0"))) Setup()
 	CFGCONbits.OCACLK = 1; // use alternate OC/TMR table
 	
 	PB1DIV = 0x00008001; // divide by 2
-	PB2DIV = 0x00008005; // change PB2 clock to 260 / 6 = 43.333 MHz for SPI and UART
-	PB3DIV = 0x00008000; // set OC and TMR clock division by 1
+	PB2DIV = 0x00008005; // change PB2 clock to 300 / 6 = 50 MHz for SPI and UART
+	PB3DIV = 0x00008001; // set OC and TMR clock division by 2
 	PB4DIV = 0x00008001; // divide by 2
 	PB5DIV = 0x00008003; // divide by 4, used for SQI
 	//PB6DIV = 0x00008001; // divide by 2
 	PB7DIV = 0x00008000; // CPU clock divide by 1
-	SPLLCON = 0x01400201; // use PLL to bring external 24 MHz into 260 MHz
+	SPLLCON = 0x01180001; // use PLL to bring external 24 MHz into 300 MHz
 	
 	// PRECON - Set up prefetch
 	PRECONbits.PFMSECEN = 0; // Flash SEC Interrupt Enable (Do not generate an interrupt when the PFMSEC bit is set)
@@ -143,7 +143,7 @@ void __attribute__((optimize("O0"))) Setup()
 	
 
 	// set up UART here
-	U2BRG = 0x0119; // 43.333 MHz to 9600 baud = 43333000/(16*9600)-1 = 281.12 = 0x0119
+	U2BRG = 0x0145; // 50 MHz to 9600 baud = 50000000/(16*9600)-1 = 324.52 = 0x0145
 	
 	U2MODEbits.STSEL = 0; // 1-Stop bit
 	U2MODEbits.PDSEL = 0; // No Parity, 8-Data bits
@@ -232,7 +232,18 @@ void __attribute__((optimize("O0"))) Setup()
 	T8CON = 0x0000; // reset
 	T8CON = 0x0000; // prescale of 1:1, 16-bit
 	TMR8 = 0x0000; // zero out counter
-	PR8 = 0xC2FD; // approx three scanlines (minus one)
+	PR8 = 0x6F9C; // approx three scanlines (minus one)
+	
+	// timer 9 for frame timing
+	T9CON = 0x0000; // reset
+	T9CON = 0x0070; // prescale of 1:256, 16-bit
+	TMR9 = 0x0000; // zero out counter
+	PR9 = 0x2625;  // one whole frame (minus one)
+
+	IPC10bits.T9IP = 0x2; // interrupt priority 2
+	IPC10bits.T9IS = 0x0; // interrupt sub-priority 0
+	IFS1bits.T9IF = 0; // T9 clear flag
+	IEC1bits.T9IE = 1; // T9 interrupt on
 
 	IPC9bits.T8IP = 0x3; // interrupt priority 3
 	IPC9bits.T8IS = 0x0; // interrupt sub-priority 0
@@ -240,6 +251,7 @@ void __attribute__((optimize("O0"))) Setup()
 	IEC1bits.T8IE = 1; // T8 interrupt on	
 	
 	T8CONbits.ON = 1; // turn on TMR8 for audio
+	T9CONbits.ON = 1; // turn on TMR9 for nes timing
 
 	// for debug purposes
 	//TRISKbits.TRISK7 = 1;
@@ -253,35 +265,35 @@ void __attribute__((optimize("O0"))) Display()
 	// set OC2 and OC3 and TMR5, horizontal visible and sync clocks
 	OC2CON = 0x0; // reset OC2
 	OC2CON = 0x0000000D; // toggle, use Timer5
-	OC2R = 0x06A0; // 0x04A0 // h-visible rise
-	OC2RS = 0x16A0; // 0x14A0 // h-blank fall
+	OC2R = 0x0230; // h-visible rise
+	OC2RS = 0x0A30; // h-blank fall
 	OC3CON = 0x0; // reset OC3
 	OC3CON = 0x0000000D; // toggle, use Timer5
-	OC3R = 0x0220; // h-sync rise
-	OC3RS = 0x14FF; // h-sync fall
+	OC3R = 0x0115; // h-sync rise
+	OC3RS = 0x0A5F; // h-sync fall
 	T5CON = 0x0000; // reset Timer5, prescale of 1:1
 	TMR5 = 0x0000; // zero out counter (offset some cycles)
-	PR5 = 0x14FF; // h-reset (minus one)
+	PR5 = 0x0A5F; // h-reset (minus one)
 	
 	// set OC7 and TMR6, vertical sync clock
 	OC7CON = 0x0; // reset OC7
 	OC7CON = 0x0025; // toggle, use Timer6, 32-bit
-	OC7R = 0x00001F80; // v-sync rise
-	OC7RS = 0x00421DFF; // v-sync fall
+	OC7R = 0x00003E40; // v-sync rise
+	OC7RS = 0x00206C00; // v-sync fall
 	T7CON = 0x0000; // turn off Timer 7???
 	T6CON = 0x0008; // prescale of 1:1, 32-bit
 	TMR6 = 0x00000000; // zero out counter (offset some cycles)
-	PR6 = 0x00421DFF; // v-reset (minus one)
+	PR6 = 0x0020AA3F; // v-reset (minus one)
 	
 	// TMR3, start of scanline
 	T3CON = 0x0000; // reset Timer3, prescale of 1:1
-	TMR3 = 0x0E60; // 0x1060 // zero out counter (offset some cycles)
-	PR3 = 0x14FF; // h-reset (minus one)
+	TMR3 = 0x0730; // zero out counter (offset some cycles)
+	PR3 = 0x0A5F; // h-reset (minus one)
 	
 	// TMR4, end of scanline
 	T4CON = 0x0000; // rest Timer4, prescale of 1:1
-	TMR4 = 0x0660; // 0x0860 // zero out counter
-	PR4 = 0x14FF; // h-reset (minus one)
+	TMR4 = 0x0130; // zero out counter
+	PR4 = 0x0A5F; // h-reset (minus one)
 	
 	IPC4bits.OC3IP = 0x7; // interrupt priority 7
 	IPC4bits.OC3IS = 0x0; // interrupt sub-priority 0
@@ -468,7 +480,7 @@ void __attribute__((optimize("O0"))) Display()
 	}
 	
 	screen_frame = 0;
-	screen_scanline = 771; //1025; // start of vertical sync
+	screen_scanline = 771; // start of vertical sync
 	
 	// turn on video timers
 	T5CONbits.ON = 1; // turn on TMR5 horizontal sync (cycle offset pre-calculated above)

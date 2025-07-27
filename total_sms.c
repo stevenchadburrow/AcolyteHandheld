@@ -5443,7 +5443,7 @@ static void vdp_tick(struct SMS_Core* sms)
 		{
 			frame_tally = 0;
 			
-			if (screen_sync >= 30)
+			if (screen_sync >= 35)
 			{
 				screen_sync = 0;
 				
@@ -5648,10 +5648,15 @@ unsigned char sms_read_cart_ram_file(char filename[16])
 
 void __attribute__((optimize("O0"))) sms_wait()
 {
-	// speed limiter for when occasionally the SMS/GG/SG is too fast
-	while (screen_sync < screen_rate) { }
-		
-	screen_sync = 0;
+	// wait for interrupts to catch up
+	while (interrupt_count < (screen_rate)) { }
+	
+	interrupt_count -= screen_rate;
+	//interrupt_count = 1; // for super slow games???
+	
+	// old method: speed limiter for when occasionally the SMS/GG/SG is too fast
+	//while (screen_sync < screen_rate) { }	
+	//screen_sync = 0;
 }
 
 void TotalSMS(unsigned char type)

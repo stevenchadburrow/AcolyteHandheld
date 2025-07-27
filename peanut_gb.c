@@ -34,7 +34,14 @@ unsigned char palette_num = 0;
 // Returns a byte from the ROM file at the given address.
 uint8_t gb_rom_read(struct gb_s *gb, const uint_fast32_t addr)
 {
-	return cart_rom[addr];
+	if (addr < 0x4000) // first bank, for faster access
+	{
+		return ext_ram[addr];
+	}
+	else
+	{
+		return cart_rom[addr];
+	}
 }
 
 uint8_t gb_boot_rom_read(struct gb_s *gb, const uint_fast16_t addr)
@@ -683,10 +690,15 @@ void lcd_draw_line(struct gb_s *gb,
 
 void __attribute__((optimize("O0"))) gb_wait()
 {	
-	// speed limiter for when occasionally the Gameboy is too fast
-	while (screen_sync < screen_rate) { }
-		
-	screen_sync = 0;
+	// wait for interrupts to catch up
+	while (interrupt_count < (screen_rate)) { }
+	
+	interrupt_count -= screen_rate;
+	//interrupt_count = 1; // for super slow games???
+	
+	// old method: speed limiter for when occasionally the Gameboy is too fast
+	//while (screen_sync < screen_rate) { }
+	//screen_sync = 0;
 	
 	return;
 }
@@ -695,6 +707,11 @@ int PeanutGB(unsigned char core)
 {
 	screen_clear();
 	audio_clear();
+	
+	for (unsigned long i=0; i<0x4000; i++)
+	{
+		ext_ram[i] = cart_rom[i];
+	}
 	
 	struct gb_s gb;
 	struct priv_t priv;
@@ -823,13 +840,7 @@ int PeanutGB(unsigned char core)
 	
 	frame_counter = 0;
 	
-#if ENABLE_SOUND
-	T8CON = 0x0000; // reset
-	T8CON = 0x0000; // prescale of 1:1, 16-bit
-	TMR8 = 0x0000; // zero out counter
-	PR8 = 0x207F; // approx twice per scanline (minus one)
-	T8CONbits.ON = 1;
-#endif
+	interrupt_count = 0;
 	
 	while (1)
 	{
@@ -897,7 +908,7 @@ int PeanutGB(unsigned char core)
 		{
 			frame_counter = 0;
 			
-			if (screen_sync >= 30)
+			if (screen_sync >= 35)
 			{
 				screen_sync = 0;
 				

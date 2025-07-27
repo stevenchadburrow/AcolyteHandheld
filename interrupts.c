@@ -920,3 +920,12 @@ volatile void __attribute__((vector(_TIMER_8_VECTOR), interrupt(ipl3srs))) t8_ha
 		}
 	}
 }
+
+volatile void __attribute__((vector(_TIMER_9_VECTOR), interrupt(ipl2srs))) t9_handler()
+{		
+	IFS1bits.T9IF = 0;  // clear interrupt flag
+	
+	interrupt_count = interrupt_count + 1;
+	
+	if (interrupt_count > 60) interrupt_count = 60;
+}
