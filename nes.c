@@ -1230,13 +1230,13 @@ void nes_buttons()
 }
 
 // needs to be unoptimized else it will be deleted
-void __attribute__((optimize("O0"))) nes_wait(unsigned long loop_count)
+void __attribute__((optimize("O0"))) nes_wait(unsigned long count)
 {
 	// wait for interrupts to catch up
-	while (interrupt_count < (loop_count)) { }
+	while (interrupt_count < (count)) { }
 	
-	interrupt_count -= loop_count;
-	//interrupt_count = 1; // for super slow games???
+	//interrupt_count -= count; // best for NES
+	interrupt_count = 0; // for super slow games???
 }
 
 unsigned char nes_read_cpu_ram(unsigned long addr)
@@ -5537,7 +5537,7 @@ void nes_init()
 	}
 }
 
-void nes_loop(unsigned long loop_count)
+void nes_loop()
 {	
 	if (nes_loop_option > 0 && nes_loop_halt == 0)
 	{
@@ -5639,7 +5639,7 @@ debug_capture(0);
 				}
 			}
 			
-			if (ppu_frame_count >= loop_count)
+			if (ppu_frame_count >= screen_rate)
 			{		
 #ifdef DEBUG
 debug_reset();
@@ -5675,7 +5675,7 @@ debug_capture(1);
 				}
 			}
 			
-			if (ppu_frame_count >= loop_count)
+			if (ppu_frame_count >= screen_rate)
 			{	
 #ifdef DEBUG
 debug_reset();
@@ -5804,7 +5804,7 @@ debug_capture(2);
 		{
 			nes_sprite_0_calc();
 
-			if (ppu_frame_count >= loop_count)
+			if (ppu_frame_count >= screen_rate)
 			{					
 				nes_border();
 			}
@@ -5861,13 +5861,13 @@ debug_capture(2);
 
 		nes_buttons();
 		
-		if (ppu_frame_count >= loop_count)
+		if (ppu_frame_count >= screen_rate)
 		{
 			ppu_frame_count = 0;
 
 			screen_flip();
 
-			nes_wait(loop_count);
+			nes_wait(screen_rate);
 		}
 		
 		ppu_frame_count++;
@@ -5896,7 +5896,7 @@ debug_capture(2);
 			{
 				screen_sync = 0;
 				
-				ppu_frame_count = loop_count;
+				ppu_frame_count = screen_rate;
 			}
 		}
 		

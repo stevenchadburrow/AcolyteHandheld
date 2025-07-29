@@ -33,6 +33,33 @@ Whole frame	806	16.6656
 */
 
 /*
+VESA Signal 1024 x 768 @ 70 Hz timing
+
+General timing
+Screen refresh rate	70 Hz
+Vertical refresh	56.475903614458 kHz
+Pixel freq.	75.0 MHz
+Horizontal timing (line)
+Polarity of horizontal sync pulse is negative.
+
+Scanline part	Pixels	Time [µs]
+Visible area	1024	13.653333333333
+Front porch	24	0.32
+Sync pulse	136	1.8133333333333
+Back porch	144	1.92
+Whole line	1328	17.706666666667
+Vertical timing (frame)
+Polarity of vertical sync pulse is negative.
+
+Frame part	Lines	Time [ms]
+Visible area	768	13.59872
+Front porch	3	0.05312
+Sync pulse	6	0.10624
+Back porch	29	0.51349333333333
+Whole frame	806	14.271573333333 
+*/
+
+/*
 // Video Color Signals
 PORTH
 
@@ -337,11 +364,11 @@ RK7	MENU
 
 #include <xc.h>
 
+#define SYS_FREQ 300000000 // Running at 300MHz
+
 // keeps program code from being written here, reserved for NES
 #pragma region name="cart_rom" origin=0x9D100000 size=0x00100000 // for NES and GB
 #pragma region name="game_rom" origin=0x9D0F0000 size=0x00010000 // pack-in game
-
-#define SYS_FREQ 260000000 // Running at 260MHz
 
 
 unsigned long VirtToPhys(volatile void* p) // changed 'const' to 'volatile'
@@ -510,6 +537,7 @@ volatile unsigned long interrupt_count = 0; // used for frame timing
 #define SCREEN_X2 1536
 #define SCREEN_Y 240
 #define SCREEN_Y2 480
+#define SCREEN_HXY 92160
 #define SCREEN_XY 184320
 #define SCREEN_XY2 368640
 
@@ -522,6 +550,7 @@ volatile unsigned char __attribute__((coherent)) screen_zero[2] = { 0x00, 0x00 }
 volatile unsigned char __attribute__((coherent)) screen_fill_color[2] = { 0x00, 0x00 }; // used in flood-fill function
 volatile unsigned char screen_handheld = 0; // 0 = VGA, 1 = LCD
 volatile unsigned char screen_rate = 3; // 3:1 frame rate
+volatile unsigned char screen_fps = 25; // 60, 45, 30, 25, and 20 actual frames per second
 volatile unsigned char screen_speed_mode = 0; // 0 = off, 1 = on
 volatile unsigned char screen_speed_dir = 1; // 0 = slow, 1 = normal, 2 = fast
 volatile unsigned char screen_speed_toggle = 0;
@@ -977,6 +1006,20 @@ void screen_flip()
 {
 	screen_frame = 1 - screen_frame;
 	
+	if (screen_fps == 60) screen_rate = 1;
+	else if (screen_fps == 45)
+	{
+		if (screen_frame == 0) screen_rate = 1;
+		else screen_rate = 2;
+	}
+	else if (screen_fps == 30) screen_rate = 2;
+	else if (screen_fps == 25)
+	{
+		if (screen_frame == 0) screen_rate = 2;
+		else screen_rate = 3;
+	}
+	else if (screen_fps == 20) screen_rate = 3;
+	
 	if (screen_handheld > 0)
 	{
 		lcd_draw();
@@ -1038,7 +1081,7 @@ void screen_fill(unsigned short color, unsigned char bytes)
 		DCH7SSIZ = 1; // source size
 		DCH7DSIZ = (SCREEN_X*SCREEN_Y >> 2); // dst size 
 		DCH7CSIZ = (SCREEN_X*SCREEN_Y >> 2); // bytes per event
-	
+
 		DCH4CONbits.CHEN = 1; // enable channel
 	}
 	else if (bytes == 2)
@@ -1418,12 +1461,12 @@ void menu_display()
 		else if (controller_mapping == 2 && screen_speed_mode == 1) display_string(0x0048, 0x0018, "AXS => AB_\\");
 		else display_string(0x0048, 0x0018, "AB_ => BY_\\");
 		
-		display_string(0x0000, 0x0020, " Frames \\");
-		if (screen_rate == 1) display_string(0x0040, 0x0020, "1:1 => 2:1\\");
-		else if (screen_rate == 2) display_string(0x0040, 0x0020, "2:1 => 3:1\\");
-		else if (screen_rate == 3) display_string(0x0040, 0x0020, "3:1 => 4:1\\");
-		else if (screen_rate == 4) display_string(0x0040, 0x0020, "4:1 => 5:1\\");
-		else if (screen_rate == 5) display_string(0x0040, 0x0020, "5:1 => 1:1\\");
+		display_string(0x0000, 0x0020, " FPS \\");
+		if (screen_fps == 60) display_string(0x0028, 0x0020, "60 => 45\\");
+		else if (screen_fps == 45) display_string(0x0028, 0x0020, "45 => 30\\");
+		else if (screen_fps == 30) display_string(0x0028, 0x0020, "30 => 25\\");
+		else if (screen_fps == 25) display_string(0x0028, 0x0020, "25 => 20\\");
+		else if (screen_fps == 20) display_string(0x0028, 0x0020, "20 => 60\\");
 		
 		if (nes_hack_vsync_flag == 0 && nes_hack_sprite_priority == 0) display_string(0x0000, 0x0028, " Hacks None   => V-Sync\\");
 		else if (nes_hack_vsync_flag == 1 && nes_hack_sprite_priority == 0) display_string(0x0000, 0x0028, " Hacks V-Sync => Sprite\\");
@@ -1486,12 +1529,12 @@ void menu_display()
 		else if (controller_mapping == 2 && screen_speed_mode == 1) display_string(0x0048, 0x0018, "AXS => AB_\\");
 		else display_string(0x0048, 0x0018, "AB_ => BY_\\");
 		
-		display_string(0x0000, 0x0020, " Frames \\");
-		if (screen_rate == 1) display_string(0x0040, 0x0020, "1:1 => 2:1\\");
-		else if (screen_rate == 2) display_string(0x0040, 0x0020, "2:1 => 3:1\\");
-		else if (screen_rate == 3) display_string(0x0040, 0x0020, "3:1 => 4:1\\");
-		else if (screen_rate == 4) display_string(0x0040, 0x0020, "4:1 => 5:1\\");
-		else if (screen_rate == 5) display_string(0x0040, 0x0020, "5:1 => 1:1\\");
+		display_string(0x0000, 0x0020, " FPS \\");
+		if (screen_fps == 60) display_string(0x0028, 0x0020, "60 => 45\\");
+		else if (screen_fps == 45) display_string(0x0028, 0x0020, "45 => 30\\");
+		else if (screen_fps == 30) display_string(0x0028, 0x0020, "30 => 25\\");
+		else if (screen_fps == 25) display_string(0x0028, 0x0020, "25 => 20\\");
+		else if (screen_fps == 20) display_string(0x0028, 0x0020, "20 => 60\\");
 		
 		if (scanline_hack == 0) display_string(0x0000, 0x0028, " Hacks None   => Sprite\\");
 		else if (scanline_hack == 1) display_string(0x0000, 0x0028, " Hacks Sprite => None  \\");
@@ -1553,12 +1596,12 @@ void menu_display()
 		else if (controller_mapping == 2 && screen_speed_mode == 1) display_string(0x0048, 0x0018, "AXS => AB_\\");
 		else display_string(0x0048, 0x0018, "AB_ => BY_\\");
 		
-		display_string(0x0000, 0x0020, " Frames \\");
-		if (screen_rate == 1) display_string(0x0040, 0x0020, "1:1 => 2:1\\");
-		else if (screen_rate == 2) display_string(0x0040, 0x0020, "2:1 => 3:1\\");
-		else if (screen_rate == 3) display_string(0x0040, 0x0020, "3:1 => 4:1\\");
-		else if (screen_rate == 4) display_string(0x0040, 0x0020, "4:1 => 5:1\\");
-		else if (screen_rate == 5) display_string(0x0040, 0x0020, "5:1 => 1:1\\");
+		display_string(0x0000, 0x0020, " FPS \\");
+		if (screen_fps == 60) display_string(0x0028, 0x0020, "60 => 45\\");
+		else if (screen_fps == 45) display_string(0x0028, 0x0020, "45 => 30\\");
+		else if (screen_fps == 30) display_string(0x0028, 0x0020, "30 => 25\\");
+		else if (screen_fps == 25) display_string(0x0028, 0x0020, "25 => 20\\");
+		else if (screen_fps == 20) display_string(0x0028, 0x0020, "20 => 60\\");
 		
 		if (button_disable == 0) display_string(0x0000, 0x0028, " Buttons Enabled => Disabled\\");
 		else if (button_disable == 1) display_string(0x0000, 0x0028, " Buttons Disabled => Enabled\\");
@@ -1690,11 +1733,11 @@ void menu_function()
 			}
 			else if (menu_pos == 4)
 			{
-				if (screen_rate == 5) screen_rate = 1;
-				else if (screen_rate == 1) screen_rate = 2;
-				else if (screen_rate == 2) screen_rate = 3;
-				else if (screen_rate == 3) screen_rate = 4;
-				else if (screen_rate == 4) screen_rate = 5;
+				if (screen_fps == 60) screen_fps = 45;
+				else if (screen_fps == 45) screen_fps = 30;
+				else if (screen_fps == 30) screen_fps = 25;
+				else if (screen_fps == 25) screen_fps = 20;
+				else if (screen_fps == 20) screen_fps = 60;
 				menu_wait = 0x0007FFFF;
 			}
 			else if (menu_pos == 5)
@@ -1843,11 +1886,11 @@ void menu_function()
 			}
 			else if (menu_pos == 4)
 			{
-				if (screen_rate == 5) screen_rate = 1;
-				else if (screen_rate == 1) screen_rate = 2;
-				else if (screen_rate == 2) screen_rate = 3;
-				else if (screen_rate == 3) screen_rate = 4;
-				else if (screen_rate == 4) screen_rate = 5;
+				if (screen_fps == 60) screen_fps = 45;
+				else if (screen_fps == 45) screen_fps = 30;
+				else if (screen_fps == 30) screen_fps = 25;
+				else if (screen_fps == 25) screen_fps = 20;
+				else if (screen_fps == 20) screen_fps = 60;
 				menu_wait = 0x0007FFFF;
 			}
 			else if (menu_pos == 5)
@@ -1936,11 +1979,11 @@ void menu_function()
 			}
 			else if (menu_pos == 4)
 			{
-				if (screen_rate == 5) screen_rate = 1;
-				else if (screen_rate == 1) screen_rate = 2;
-				else if (screen_rate == 2) screen_rate = 3;
-				else if (screen_rate == 3) screen_rate = 4;
-				else if (screen_rate == 4) screen_rate = 5;
+				if (screen_fps == 60) screen_fps = 45;
+				else if (screen_fps == 45) screen_fps = 30;
+				else if (screen_fps == 30) screen_fps = 25;
+				else if (screen_fps == 25) screen_fps = 20;
+				else if (screen_fps == 20) screen_fps = 60;
 				menu_wait = 0x0007FFFF;
 			}
 			else if (menu_pos == 5)
@@ -2083,7 +2126,7 @@ void game_loop(unsigned char override)
 				USBHostTasks();
 			}
 
-			nes_loop(screen_rate); // frame rate divider and external interrupt
+			nes_loop(); // frame rate divider and external interrupt
 		}
 	}
 	else if ((cart_rom[0x0104] == 0xCE &&

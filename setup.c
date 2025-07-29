@@ -397,8 +397,8 @@ void __attribute__((optimize("O0"))) Display()
 	DCH4ECONbits.CHAIRQ = 0; // disable abort int
 	DCH4ECONbits.SIRQEN = 1; // enable start interrupt
 	DCH4INT = 0x0000; // clear all interrupts
-	DCH1INTbits.CHBCIF = 0; // clear transfer complete flag
-	DCH1INTbits.CHBCIE = 1; // enable transfer complete interrupt
+	DCH4INTbits.CHBCIF = 0; // clear transfer complete flag
+	DCH4INTbits.CHBCIE = 1; // enable transfer complete interrupt
 	DCH4CONbits.CHCHN = 0; // disallow chaining
 	DCH4CONbits.CHCHNS = 0; // chain from higher channel
 	DCH4CONbits.CHAED = 1; // detect when disabled
@@ -412,8 +412,8 @@ void __attribute__((optimize("O0"))) Display()
 	DCH5ECONbits.CHAIRQ = 0; // disable abort int
 	DCH5ECONbits.SIRQEN = 1; // enable start interrupt
 	DCH5INT = 0x0000; // clear all interrupts
-	DCH1INTbits.CHBCIF = 0; // clear transfer complete flag
-	DCH1INTbits.CHBCIE = 1; // enable transfer complete interrupt
+	DCH5INTbits.CHBCIF = 0; // clear transfer complete flag
+	DCH5INTbits.CHBCIE = 1; // enable transfer complete interrupt
 	DCH5CONbits.CHCHN = 1; // allow chaining
 	DCH5CONbits.CHCHNS = 0; // chain from higher channel
 	DCH5CONbits.CHAED = 1; // detect when disabled
@@ -427,8 +427,8 @@ void __attribute__((optimize("O0"))) Display()
 	DCH6ECONbits.CHAIRQ = 0; // disable abort int
 	DCH6ECONbits.SIRQEN = 1; // enable start interrupt
 	DCH6INT = 0x0000; // clear all interrupts
-	DCH1INTbits.CHBCIF = 0; // clear transfer complete flag
-	DCH1INTbits.CHBCIE = 1; // enable transfer complete interrupt
+	DCH6INTbits.CHBCIF = 0; // clear transfer complete flag
+	DCH6INTbits.CHBCIE = 1; // enable transfer complete interrupt
 	DCH6CONbits.CHCHN = 1; // allow chaining
 	DCH6CONbits.CHCHNS = 0; // chain from higher channel
 	DCH6CONbits.CHAED = 1; // detect when disabled
@@ -442,8 +442,8 @@ void __attribute__((optimize("O0"))) Display()
 	DCH7ECONbits.CHAIRQ = 0; // disable abort int
 	DCH7ECONbits.SIRQEN = 1; // enable start interrupt
 	DCH7INT = 0x0000; // clear all interrupts
-	DCH1INTbits.CHBCIF = 0; // clear transfer complete flag
-	DCH1INTbits.CHBCIE = 1; // enable transfer complete interrupt
+	DCH7INTbits.CHBCIF = 0; // clear transfer complete flag
+	DCH7INTbits.CHBCIE = 1; // enable transfer complete interrupt
 	DCH7CONbits.CHCHN = 1; // allow chaining
 	DCH7CONbits.CHCHNS = 0; // chain from higher channel
 	DCH7CONbits.CHAED = 1; // detect when disabled

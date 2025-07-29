@@ -693,8 +693,8 @@ void __attribute__((optimize("O0"))) gb_wait()
 	// wait for interrupts to catch up
 	while (interrupt_count < (screen_rate)) { }
 	
-	interrupt_count -= screen_rate;
-	//interrupt_count = 1; // for super slow games???
+	//interrupt_count -= screen_rate; // best for NES
+	interrupt_count = 0; // for super slow games???
 	
 	// old method: speed limiter for when occasionally the Gameboy is too fast
 	//while (screen_sync < screen_rate) { }

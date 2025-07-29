@@ -430,7 +430,13 @@ static void update_noise(int8_t *samples)
  */
 void audio_callback(void *userdata, uint8_t *stream)
 {
-	audio_n_samples = AUDIO_NSAMPLES * screen_rate;
+	if (screen_fps == 60) audio_n_samples = AUDIO_NSAMPLES * 1;
+	else if (screen_fps == 45) audio_n_samples = (AUDIO_NSAMPLES * 3) / 2;
+	else if (screen_fps == 30) audio_n_samples = AUDIO_NSAMPLES * 2;
+	else if (screen_fps == 25) audio_n_samples = (AUDIO_NSAMPLES * 5) / 2;
+	else if (screen_fps == 20) audio_n_samples = AUDIO_NSAMPLES * 3;
+	
+	//audio_n_samples = AUDIO_NSAMPLES * screen_rate;
 	
 	int8_t *samples = (int8_t *)stream;
 
