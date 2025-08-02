@@ -1000,7 +1000,7 @@ const unsigned char usb_conversion[256] =
 #include "diskio.c"
 
 #include "nvm.c"
-//#include "sqi.c"
+#include "sqi.c"
 
 void screen_flip()
 {
@@ -1019,6 +1019,10 @@ void screen_flip()
 		else screen_rate = 3;
 	}
 	else if (screen_fps == 20) screen_rate = 3;
+	else
+	{
+		screen_rate = 4; // 15 FPS essentially
+	}
 	
 	if (screen_handheld > 0)
 	{
@@ -1466,7 +1470,8 @@ void menu_display()
 		else if (screen_fps == 45) display_string(0x0028, 0x0020, "45 => 30\\");
 		else if (screen_fps == 30) display_string(0x0028, 0x0020, "30 => 25\\");
 		else if (screen_fps == 25) display_string(0x0028, 0x0020, "25 => 20\\");
-		else if (screen_fps == 20) display_string(0x0028, 0x0020, "20 => 60\\");
+		else if (screen_fps == 20) display_string(0x0028, 0x0020, "20 => 15\\");
+		else if (screen_fps == 15) display_string(0x0028, 0x0020, "15 => 60\\");
 		
 		if (nes_hack_vsync_flag == 0 && nes_hack_sprite_priority == 0) display_string(0x0000, 0x0028, " Hacks None   => V-Sync\\");
 		else if (nes_hack_vsync_flag == 1 && nes_hack_sprite_priority == 0) display_string(0x0000, 0x0028, " Hacks V-Sync => Sprite\\");
@@ -1505,10 +1510,10 @@ void menu_display()
 		display_string(0x0000, 0x0080, " Save State C\\");
 		display_string(0x0000, 0x0088, " Save State D\\");
 	}
-	else if (cart_rom[0x0104] == 0xCE &&
+	else if ((cart_rom[0x0104] == 0xCE &&
 		cart_rom[0x0105] == 0xED &&
 		cart_rom[0x0106] == 0x66 &&
-		cart_rom[0x0107] == 0x66) // GB/GBC
+		cart_rom[0x0107] == 0x66) || rom_in_sqi == 1) // GB/GBC
 	{
 		display_string(0x0000, 0x0000, " Return to Game\\");
 
@@ -1534,7 +1539,8 @@ void menu_display()
 		else if (screen_fps == 45) display_string(0x0028, 0x0020, "45 => 30\\");
 		else if (screen_fps == 30) display_string(0x0028, 0x0020, "30 => 25\\");
 		else if (screen_fps == 25) display_string(0x0028, 0x0020, "25 => 20\\");
-		else if (screen_fps == 20) display_string(0x0028, 0x0020, "20 => 60\\");
+		else if (screen_fps == 20) display_string(0x0028, 0x0020, "20 => 15\\");
+		else if (screen_fps == 15) display_string(0x0028, 0x0020, "15 => 60\\");
 		
 		if (scanline_hack == 0) display_string(0x0000, 0x0028, " Hacks None   => Sprite\\");
 		else if (scanline_hack == 1) display_string(0x0000, 0x0028, " Hacks Sprite => None  \\");
@@ -1601,7 +1607,8 @@ void menu_display()
 		else if (screen_fps == 45) display_string(0x0028, 0x0020, "45 => 30\\");
 		else if (screen_fps == 30) display_string(0x0028, 0x0020, "30 => 25\\");
 		else if (screen_fps == 25) display_string(0x0028, 0x0020, "25 => 20\\");
-		else if (screen_fps == 20) display_string(0x0028, 0x0020, "20 => 60\\");
+		else if (screen_fps == 20) display_string(0x0028, 0x0020, "20 => 15\\");
+		else if (screen_fps == 15) display_string(0x0028, 0x0020, "15 => 60\\");
 		
 		if (button_disable == 0) display_string(0x0000, 0x0028, " Buttons Enabled => Disabled\\");
 		else if (button_disable == 1) display_string(0x0000, 0x0028, " Buttons Disabled => Enabled\\");
@@ -1737,7 +1744,8 @@ void menu_function()
 				else if (screen_fps == 45) screen_fps = 30;
 				else if (screen_fps == 30) screen_fps = 25;
 				else if (screen_fps == 25) screen_fps = 20;
-				else if (screen_fps == 20) screen_fps = 60;
+				else if (screen_fps == 20) screen_fps = 15;
+				else if (screen_fps == 15) screen_fps = 60;
 				menu_wait = 0x0007FFFF;
 			}
 			else if (menu_pos == 5)
@@ -1847,10 +1855,10 @@ void menu_function()
 
 			nes_init();
 		}
-		else if (cart_rom[0x0104] == 0xCE &&
+		else if ((cart_rom[0x0104] == 0xCE &&
 			cart_rom[0x0105] == 0xED &&
 			cart_rom[0x0106] == 0x66 &&
-			cart_rom[0x0107] == 0x66) // GB/GBC
+			cart_rom[0x0107] == 0x66) || rom_in_sqi == 1) // GB/GBC 
 		{
 			if (menu_pos == 0)
 			{
@@ -1890,7 +1898,8 @@ void menu_function()
 				else if (screen_fps == 45) screen_fps = 30;
 				else if (screen_fps == 30) screen_fps = 25;
 				else if (screen_fps == 25) screen_fps = 20;
-				else if (screen_fps == 20) screen_fps = 60;
+				else if (screen_fps == 20) screen_fps = 15;
+				else if (screen_fps == 15) screen_fps = 60;
 				menu_wait = 0x0007FFFF;
 			}
 			else if (menu_pos == 5)
@@ -1983,7 +1992,8 @@ void menu_function()
 				else if (screen_fps == 45) screen_fps = 30;
 				else if (screen_fps == 30) screen_fps = 25;
 				else if (screen_fps == 25) screen_fps = 20;
-				else if (screen_fps == 20) screen_fps = 60;
+				else if (screen_fps == 20) screen_fps = 15;
+				else if (screen_fps == 15) screen_fps = 60;
 				menu_wait = 0x0007FFFF;
 			}
 			else if (menu_pos == 5)
@@ -2098,6 +2108,19 @@ void game_loop(unsigned char override)
 	
 	DelayMS(1000);
 	
+	if (override == 6)
+	{
+		controller_config = 1; // only one player
+		
+		T8CON = 0x0000; // reset
+		T8CON = 0x0000; // prescale of 1:1, 16-bit
+		TMR8 = 0x0000; // zero out counter
+		PR8 = 0x1299; // approx twice per scanline (minus one)
+		T8CONbits.ON = 1;
+		
+		PeanutGB(3); // Gameboy Color using SQI
+	}
+	
 	if ((cart_rom[0] == 0x4E && // N
 		cart_rom[1] == 0x45 && // E
 		cart_rom[2] == 0x53) || override == 1) // S
@@ -2133,7 +2156,7 @@ void game_loop(unsigned char override)
 		cart_rom[0x0105] == 0xED &&
 		cart_rom[0x0106] == 0x66 &&
 		cart_rom[0x0107] == 0x66) || 
-		(override == 2 || override == 3)) // GB/GBC
+		(override == 2 || override == 3)) // GB/GBC/SQI
 	{
 		controller_config = 1; // only one player
 		
@@ -2147,7 +2170,7 @@ void game_loop(unsigned char override)
 		{
 			PeanutGB(0); // force DMG mode
 		}
-		else
+		else if (override == 3)
 		{
 			PeanutGB(1); // allow DMG or CGB
 		}
@@ -2361,11 +2384,22 @@ int main()
 				}
 				
 				if ((controller_status_1 & 0x10) == 0x10 ||
-				(controller_status_2 & 0x10) == 0x10 ||
-				(controller_status_3 & 0x10) == 0x10 ||
-				(controller_status_4 & 0x10) == 0x10) // UP, GB override
+					(controller_status_2 & 0x10) == 0x10 ||
+					(controller_status_3 & 0x10) == 0x10 ||
+					(controller_status_4 & 0x10) == 0x10) // UP, GB override
 				{
 					game_loop(2);
+				}
+				else if (((controller_status_1 & 0x40) == 0x40 ||
+					(controller_status_2 & 0x40) == 0x40 ||
+					(controller_status_3 & 0x40) == 0x40 ||
+					(controller_status_4 & 0x40) == 0x40) &&
+					((controller_status_1 & 0x80) == 0x80 ||
+					(controller_status_2 & 0x80) == 0x80 ||
+					(controller_status_3 & 0x80) == 0x80 ||
+					(controller_status_4 & 0x80) == 0x80)) // both left and right, GBC with SQI
+				{
+					game_loop(6);
 				}
 				else if ((controller_status_1 & 0x40) == 0x40 ||
 					(controller_status_2 & 0x40) == 0x40 ||
@@ -2382,7 +2416,7 @@ int main()
 					game_loop(5);
 				}
 				else
-				{
+				{	
 					game_loop(0); // check rom header to decide
 				}
 			}
@@ -2602,6 +2636,17 @@ int main()
 			{
 				game_loop(2);
 			}
+			else if (((controller_status_1 & 0x40) == 0x40 ||
+				(controller_status_2 & 0x40) == 0x40 ||
+				(controller_status_3 & 0x40) == 0x40 ||
+				(controller_status_4 & 0x40) == 0x40) &&
+				((controller_status_1 & 0x40) == 0x40 ||
+				(controller_status_2 & 0x40) == 0x40 ||
+				(controller_status_3 & 0x40) == 0x40 ||
+				(controller_status_4 & 0x40) == 0x40)) // both left and right, GBC with SQI
+			{
+				game_loop(6);
+			}
 			else if ((controller_status_1 & 0x40) == 0x40 ||
 				(controller_status_2 & 0x40) == 0x40 ||
 				(controller_status_3 & 0x40) == 0x40 ||
@@ -2701,14 +2746,43 @@ int main()
 				{
 					screen_buffer[i] = 0x00; // black while burning
 				}
+				
+				controller_enable = 1; // should already be on?
 
 				DelayMS(500);
 
 				screen_flip();
 
 				DelayMS(500);
-
-				nes_burn(directory_name, filename);
+				
+				if (((controller_status_1 & 0x40) == 0x40 ||
+					(controller_status_2 & 0x40) == 0x40 ||
+					(controller_status_3 & 0x40) == 0x40 ||
+					(controller_status_4 & 0x40) == 0x40) &&
+					((controller_status_1 & 0x80) == 0x80 ||
+					(controller_status_2 & 0x80) == 0x80 ||
+					(controller_status_3 & 0x80) == 0x80 ||
+					(controller_status_4 & 0x80) == 0x80)) // both left and right, GBC with SQI
+				{
+					sqi_initialize();
+					
+					sqi_write(directory_name, filename);
+					
+					DelayMS(1000);
+	
+					// soft reset system
+					SYSKEY = 0x0; // reset
+					SYSKEY = 0xAA996655; // unlock key #1
+					SYSKEY = 0x556699AA; // unlock key #2
+					RSWRST = 1; // set bit to reset of system
+					SYSKEY = 0x0; // re-lock
+					RSWRST; // read from register to reset
+					while (1) { } // wait until reset occurs
+				}
+				else
+				{
+					nes_burn(directory_name, filename);
+				}
 			}
 		}
 	}
