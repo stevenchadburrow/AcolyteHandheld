@@ -1500,15 +1500,21 @@ void menu_display()
 		else if (nes_loop_option == 2) display_string(0x0050, 0x0048, " 2 => 3\\");
 		else if (nes_loop_option == 3) display_string(0x0050, 0x0048, " 3 => 4\\");
 		else if (nes_loop_option == 4) display_string(0x0050, 0x0048, " 4 => 0\\");
+		
+		display_string(0x0000, 0x0050, " Border Mod \\");
+		if (nes_border_shrink == 0) display_string(0x0060, 0x0050, " 0 => 1\\");
+		else if (nes_border_shrink == 1) display_string(0x0060, 0x0050, " 1 => 2\\");
+		else if (nes_border_shrink == 2) display_string(0x0060, 0x0050, " 2 => 3\\");
+		else if (nes_border_shrink == 3) display_string(0x0060, 0x0050, " 3 => 0\\");
 
-		display_string(0x0000, 0x0050, " Load Game A\\");
-		display_string(0x0000, 0x0058, " Load Game B\\");
-		display_string(0x0000, 0x0060, " Load State C\\");
-		display_string(0x0000, 0x0068, " Load State D\\");
-		display_string(0x0000, 0x0070, " Save Game A\\");
-		display_string(0x0000, 0x0078, " Save Game B\\");
-		display_string(0x0000, 0x0080, " Save State C\\");
-		display_string(0x0000, 0x0088, " Save State D\\");
+		display_string(0x0000, 0x0058, " Load Game A\\");
+		display_string(0x0000, 0x0060, " Load Game B\\");
+		display_string(0x0000, 0x0068, " Load State C\\");
+		display_string(0x0000, 0x0070, " Load State D\\");
+		display_string(0x0000, 0x0078, " Save Game A\\");
+		display_string(0x0000, 0x0080, " Save Game B\\");
+		display_string(0x0000, 0x0088, " Save State C\\");
+		display_string(0x0000, 0x0090, " Save State D\\");
 	}
 	else if ((cart_rom[0x0104] == 0xCE &&
 		cart_rom[0x0105] == 0xED &&
@@ -1765,7 +1771,6 @@ void menu_function()
 					nes_hack_vsync_flag = 0;
 					nes_hack_sprite_priority = 0;
 				}
-				nes_hack_border_shrink = 0; // always disable
 				menu_wait = 0x0007FFFF;
 			}
 			else if (menu_pos == 6)
@@ -1802,15 +1807,15 @@ void menu_function()
 			}
 			else if (menu_pos == 10)
 			{
-				nes_load("GAME-A.SAV");
-
-				nes_reset_flag = 0;
-
-				menu_loop = 0;
+				if (nes_border_shrink == 3) nes_border_shrink = 0;
+				else if (nes_border_shrink == 0) nes_border_shrink = 1;
+				else if (nes_border_shrink == 1) nes_border_shrink = 2;
+				else if (nes_border_shrink == 2) nes_border_shrink = 3;
+				menu_wait = 0x0007FFFF;
 			}
 			else if (menu_pos == 11)
 			{
-				nes_load("GAME-B.SAV");
+				nes_load("GAME-A.SAV");
 
 				nes_reset_flag = 0;
 
@@ -1818,35 +1823,43 @@ void menu_function()
 			}
 			else if (menu_pos == 12)
 			{
-				nes_state_load("GAME-C.SAV");
+				nes_load("GAME-B.SAV");
+
+				nes_reset_flag = 0;
 
 				menu_loop = 0;
 			}
 			else if (menu_pos == 13)
 			{
-				nes_state_load("GAME-D.SAV");
+				nes_state_load("GAME-C.SAV");
 
 				menu_loop = 0;
 			}
 			else if (menu_pos == 14)
 			{
-				nes_save("GAME-A.SAV");
+				nes_state_load("GAME-D.SAV");
 
 				menu_loop = 0;
 			}
 			else if (menu_pos == 15)
 			{
-				nes_save("GAME-B.SAV");
+				nes_save("GAME-A.SAV");
 
 				menu_loop = 0;
 			}
 			else if (menu_pos == 16)
 			{
-				nes_state_save("GAME-C.SAV");
+				nes_save("GAME-B.SAV");
 
 				menu_loop = 0;
 			}
 			else if (menu_pos == 17)
+			{
+				nes_state_save("GAME-C.SAV");
+
+				menu_loop = 0;
+			}
+			else if (menu_pos == 18)
 			{
 				nes_state_save("GAME-D.SAV");
 
@@ -2170,7 +2183,7 @@ void game_loop(unsigned char override)
 		{
 			PeanutGB(0); // force DMG mode
 		}
-		else if (override == 3)
+		else
 		{
 			PeanutGB(1); // allow DMG or CGB
 		}

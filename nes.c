@@ -32,7 +32,8 @@ volatile unsigned char *cart_bottom; // copy of ROM bottom bank for quicker acce
 
 unsigned long nes_hack_vsync_flag = 0; // change this accordingly
 unsigned long nes_hack_sprite_priority = 0; // change this accordingly
-unsigned long nes_hack_border_shrink = 0; // change this accordingly
+
+unsigned long nes_border_shrink = 0; // 0 through 3 really
 
 unsigned long nes_loop_option = 0; // 0 through 4 really
 unsigned long nes_loop_max = 0;
@@ -3450,7 +3451,7 @@ void nes_border()
 		/*
 		unsigned char pixel_color = nes_palette_single[(pal_ram[0x00]&0x3F)];
 		
-		if (nes_hack_border_shrink > 0)
+		if (nes_border_shrink > 0)
 		{
 			for (unsigned short y=16; y<224; y++) // remove overscan
 			{
@@ -3479,7 +3480,7 @@ void nes_border()
 		/*
 		unsigned short pixel_color = nes_palette_double[(pal_ram[0x00]&0x3F)];
 		
-		if (nes_hack_border_shrink > 0)
+		if (nes_border_shrink > 0)
 		{
 			for (unsigned short y=16; y<224; y++) // remove overscan
 			{
@@ -3576,9 +3577,13 @@ void nes_background(unsigned long tile, unsigned long line)
 		//	nes_mmc3_irq_toggle(ppu_flag_b);
 		//}
 		
-		if (line >= 8 && line < 232 && tile > 0 && tile < 31) // remove overscan
+		if (line >= 0 && line < 240 && tile >= 0 && tile < 32)
 		{	
-			if (nes_hack_border_shrink > 0 && (line < 16 || line >= 224)) return;
+			if (nes_border_shrink >= 1 && (line < 8 || line >= 232)) return;
+			
+			if (nes_border_shrink >= 2 && (tile < 1 || tile >= 31)) return;
+			
+			if (nes_border_shrink >= 3 && (line < 16 || line >= 224)) return;
 				
 			pixel_y = line;
 
@@ -4389,11 +4394,15 @@ void nes_sprites(unsigned char ground, unsigned long min_y, unsigned long max_y)
 											pixel_x = sprite_x+i;
 											pixel_y = sprite_y+j+1;
 
-											if (ppu_flag_ls > 0 || pixel_x >= 8) 
+											if (ppu_flag_ls > 0) 
 											{
-												if (pixel_x >= 0 && pixel_x < 256 && 
-													((nes_hack_border_shrink > 0 && pixel_y >= 16 && pixel_y < 224) ||
-													(nes_hack_border_shrink == 0 && pixel_y >= 8 && pixel_y < 232)))
+												if (nes_border_shrink >= 1 && pixel_y < 8 && pixel_y >= 232) continue;
+												
+												if (nes_border_shrink >= 2 && pixel_x < 8 && pixel_x >= 248) continue;
+												
+												if (nes_border_shrink >= 3 && pixel_y < 16 && pixel_y >= 224) continue;
+												
+												if (pixel_x >= 0 && pixel_x < 256 && pixel_y >= 0 && pixel_y < 240)
 												{
 													if (ppu_flag_g > 0)
 													{
@@ -4431,11 +4440,15 @@ void nes_sprites(unsigned char ground, unsigned long min_y, unsigned long max_y)
 											pixel_x = sprite_x+i;
 											pixel_y = sprite_y+j+1;
 
-											if (ppu_flag_ls > 0 || pixel_x >= 8) 
+											if (ppu_flag_ls > 0) 
 											{
-												if (pixel_x >= 0 && pixel_x < 256 && 
-													((nes_hack_border_shrink > 0 && pixel_y >= 16 && pixel_y < 224) ||
-													(nes_hack_border_shrink == 0 && pixel_y >= 8 && pixel_y < 232)))
+												if (nes_border_shrink >= 1 && pixel_y < 8 && pixel_y >= 232) continue;
+												
+												if (nes_border_shrink >= 2 && pixel_x < 8 && pixel_x >= 248) continue;
+												
+												if (nes_border_shrink >= 3 && pixel_y < 16 && pixel_y >= 224) continue;
+												
+												if (pixel_x >= 0 && pixel_x < 256 && pixel_y >= 0 && pixel_y < 240)
 												{
 													if (ppu_flag_g > 0)
 													{
