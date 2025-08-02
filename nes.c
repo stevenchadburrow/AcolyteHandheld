@@ -3577,7 +3577,7 @@ void nes_background(unsigned long tile, unsigned long line)
 		//	nes_mmc3_irq_toggle(ppu_flag_b);
 		//}
 		
-		if (line >= 0 && line < 240 && tile >= 0 && tile < 32)
+		if (line >= 0 && line < 240 && tile >= 0 && tile < 33)
 		{	
 			if (nes_border_shrink >= 1 && (line < 8 || line >= 232)) return;
 			
@@ -4129,15 +4129,21 @@ void nes_sprites(unsigned char ground, unsigned long min_y, unsigned long max_y)
 
 											if (ppu_flag_ls > 0 || pixel_x >= 8) 
 											{
-												if (pixel_x >= 0 && pixel_x < 256 && pixel_y >= 8 && pixel_y < 232)
+												if (pixel_x >= 0 && pixel_x < 256 && pixel_y >= 0 && pixel_y < 240)
 												{
-													if (ppu_flag_g > 0)
-													{
-														nes_pixel_vga_pal(pixel_x, pixel_y, (pal_ram[(0x0010+((sprite_attr&0x03)<<2)+pixel_color)]&0x30));
-													}
+													if (nes_border_shrink >= 1 && (pixel_y < 8 || pixel_y >= 232)) { }
+													else if (nes_border_shrink >= 2 && (pixel_x < 8 || pixel_x >= 248)) { }
+													else if (nes_border_shrink >= 3 && (pixel_y < 16 || pixel_y >= 224)) { }
 													else
 													{
-														nes_pixel_vga_pal(pixel_x, pixel_y, pal_ram[(0x0010+((sprite_attr&0x03)<<2)+pixel_color)]);
+														if (ppu_flag_g > 0)
+														{
+															nes_pixel_vga_pal(pixel_x, pixel_y, (pal_ram[(0x0010+((sprite_attr&0x03)<<2)+pixel_color)]&0x30));
+														}
+														else
+														{
+															nes_pixel_vga_pal(pixel_x, pixel_y, pal_ram[(0x0010+((sprite_attr&0x03)<<2)+pixel_color)]);
+														}
 													}
 												}
 											}
@@ -4169,15 +4175,21 @@ void nes_sprites(unsigned char ground, unsigned long min_y, unsigned long max_y)
 
 											if (ppu_flag_ls > 0 || pixel_x >= 8) 
 											{
-												if (pixel_x >= 0 && pixel_x < 256 && pixel_y >= 8 && pixel_y < 232)
+												if (pixel_x >= 0 && pixel_x < 256 && pixel_y >= 0 && pixel_y < 240)
 												{
-													if (ppu_flag_g > 0)
-													{
-														nes_pixel_lcd_pal(pixel_x, pixel_y, (pal_ram[(0x0010+((sprite_attr&0x03)<<2)+pixel_color)]&0x30));
-													}
+													if (nes_border_shrink >= 1 && (pixel_y < 8 || pixel_y >= 232)) { }
+													else if (nes_border_shrink >= 2 && (pixel_x < 8 || pixel_x >= 248)) { }
+													else if (nes_border_shrink >= 3 && (pixel_y < 16 || pixel_y >= 224)) { }
 													else
 													{
-														nes_pixel_lcd_pal(pixel_x, pixel_y, pal_ram[(0x0010+((sprite_attr&0x03)<<2)+pixel_color)]);
+														if (ppu_flag_g > 0)
+														{
+															nes_pixel_lcd_pal(pixel_x, pixel_y, (pal_ram[(0x0010+((sprite_attr&0x03)<<2)+pixel_color)]&0x30));
+														}
+														else
+														{
+															nes_pixel_lcd_pal(pixel_x, pixel_y, pal_ram[(0x0010+((sprite_attr&0x03)<<2)+pixel_color)]);
+														}
 													}
 												}
 											}
@@ -4394,23 +4406,23 @@ void nes_sprites(unsigned char ground, unsigned long min_y, unsigned long max_y)
 											pixel_x = sprite_x+i;
 											pixel_y = sprite_y+j+1;
 
-											if (ppu_flag_ls > 0) 
-											{
-												if (nes_border_shrink >= 1 && pixel_y < 8 && pixel_y >= 232) continue;
-												
-												if (nes_border_shrink >= 2 && pixel_x < 8 && pixel_x >= 248) continue;
-												
-												if (nes_border_shrink >= 3 && pixel_y < 16 && pixel_y >= 224) continue;
-												
+											if (ppu_flag_ls > 0 || pixel_x >= 8) 
+											{									
 												if (pixel_x >= 0 && pixel_x < 256 && pixel_y >= 0 && pixel_y < 240)
 												{
-													if (ppu_flag_g > 0)
-													{
-														nes_pixel_vga_pal(pixel_x, pixel_y, (pal_ram[(0x0010+((sprite_attr&0x03)<<2)+pixel_color)]&0x30));
-													}
+													if (nes_border_shrink >= 1 && (pixel_y < 8 || pixel_y >= 232)) { }
+													else if (nes_border_shrink >= 2 && (pixel_x < 8 || pixel_x >= 248)) { }
+													else if (nes_border_shrink >= 3 && (pixel_y < 16 || pixel_y >= 224)) { }
 													else
 													{
-														nes_pixel_vga_pal(pixel_x, pixel_y, pal_ram[(0x0010+((sprite_attr&0x03)<<2)+pixel_color)]);
+														if (ppu_flag_g > 0)
+														{
+															nes_pixel_vga_pal(pixel_x, pixel_y, (pal_ram[(0x0010+((sprite_attr&0x03)<<2)+pixel_color)]&0x30));
+														}
+														else
+														{
+															nes_pixel_vga_pal(pixel_x, pixel_y, pal_ram[(0x0010+((sprite_attr&0x03)<<2)+pixel_color)]);
+														}
 													}
 												}
 											}
@@ -4440,23 +4452,23 @@ void nes_sprites(unsigned char ground, unsigned long min_y, unsigned long max_y)
 											pixel_x = sprite_x+i;
 											pixel_y = sprite_y+j+1;
 
-											if (ppu_flag_ls > 0) 
+											if (ppu_flag_ls > 0 || pixel_x >= 8) 
 											{
-												if (nes_border_shrink >= 1 && pixel_y < 8 && pixel_y >= 232) continue;
-												
-												if (nes_border_shrink >= 2 && pixel_x < 8 && pixel_x >= 248) continue;
-												
-												if (nes_border_shrink >= 3 && pixel_y < 16 && pixel_y >= 224) continue;
-												
 												if (pixel_x >= 0 && pixel_x < 256 && pixel_y >= 0 && pixel_y < 240)
 												{
-													if (ppu_flag_g > 0)
-													{
-														nes_pixel_lcd_pal(pixel_x, pixel_y, (pal_ram[(0x0010+((sprite_attr&0x03)<<2)+pixel_color)]&0x30));
-													}
+													if (nes_border_shrink >= 1 && (pixel_y < 8 || pixel_y >= 232)) { }
+													else if (nes_border_shrink >= 2 && (pixel_x < 8 || pixel_x >= 248)) { }
+													else if (nes_border_shrink >= 3 && (pixel_y < 16 || pixel_y >= 224)) { }
 													else
 													{
-														nes_pixel_lcd_pal(pixel_x, pixel_y, pal_ram[(0x0010+((sprite_attr&0x03)<<2)+pixel_color)]);
+														if (ppu_flag_g > 0)
+														{
+															nes_pixel_lcd_pal(pixel_x, pixel_y, (pal_ram[(0x0010+((sprite_attr&0x03)<<2)+pixel_color)]&0x30));
+														}
+														else
+														{
+															nes_pixel_lcd_pal(pixel_x, pixel_y, pal_ram[(0x0010+((sprite_attr&0x03)<<2)+pixel_color)]);
+														}
 													}
 												}
 											}
@@ -5638,7 +5650,7 @@ debug_capture(0);
 
 	ppu_tile_cycles += ((cpu_current_cycles<<1)+cpu_current_cycles);
 	
-	while (ppu_tile_cycles >= 8 && ppu_tile_count < 32) // 8 dots per tile
+	while (ppu_tile_cycles >= 8 && ppu_tile_count < 33) // 8 dots per tile
 	{		
 		ppu_tile_cycles -= 8;
 
