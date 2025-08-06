@@ -1139,7 +1139,7 @@ void audio_clear()
 #include "setup.c" 
 
 // comment out for quicker reprogramming
-//#include "game.c" 
+#include "game.c" 
 
 
 
@@ -1148,8 +1148,47 @@ volatile char __attribute__((coherent)) list_name[128*12];
 volatile unsigned char directory_root = 1; // root folder?
 volatile unsigned short list_total = 1; // start at 1
 
-void list_generate()
+void list_generate(unsigned int flag)
 {
+	if (directory_root == 1)
+	{
+		// top option
+		list_name[0] = 'P';
+		list_name[1] = 'l';
+		list_name[2] = 'a';
+		list_name[3] = 'y';
+		list_name[4] = ' ';
+		list_name[5] = 'G';
+		list_name[6] = 'a';
+		list_name[7] = 'm';
+		list_name[8] = 'e';
+		list_name[9] = '!';
+		list_name[10] = ' ';
+		list_name[11] = ' ';
+		
+		// built-in game
+		list_name[12] = 'P';
+		list_name[13] = 'l';
+		list_name[14] = 'a';
+		list_name[15] = 'y';
+		list_name[16] = ' ';
+		list_name[17] = 'L';
+		list_name[18] = 'J';
+		list_name[19] = '-';
+		list_name[20] = '6';
+		list_name[21] = '5';
+		list_name[22] = ' ';
+		list_name[23] = ' ';
+		
+		list_total = 2;
+	}
+	else
+	{
+		list_total = 1;
+	}
+	
+	if (flag == 0) return;
+	
 	// Global variables
 	DIR dir; // Directory information for the current directory
 	FATFS fso; // File System Object for the file system we are reading from
@@ -1628,10 +1667,10 @@ void menu_display()
 
 void menu_function()
 {
-	while ((controller_status_1 & 0x08) == 0x08 ||
-		(controller_status_2 & 0x08) == 0x08 ||
-		(controller_status_3 & 0x08) == 0x08 ||
-		(controller_status_4 & 0x08) == 0x08)
+	while ((controller_status_1 & 0x0F) != 0x00 ||
+		(controller_status_2 & 0x0F) != 0x00 ||
+		(controller_status_3 & 0x0F) != 0x00 ||
+		(controller_status_4 & 0x0F) != 0x00)
 	{
 		USBHostTasks();
 	}
@@ -1653,10 +1692,10 @@ void menu_function()
 
 		screen_flip();
 
-		while (((controller_status_1 & 0x08) == 0x00 &&
-			(controller_status_2 & 0x08) == 0x00 &&
-			(controller_status_3 & 0x08) == 0x00 &&
-			(controller_status_4 & 0x08) == 0x00) ||
+		while (((controller_status_1 & 0x0F) == 0x00 &&
+			(controller_status_2 & 0x0F) == 0x00 &&
+			(controller_status_3 & 0x0F) == 0x00 &&
+			(controller_status_4 & 0x0F) == 0x00) ||
 			menu_wait > 0)
 		{	
 			USBHostTasks();
@@ -2339,118 +2378,7 @@ int main()
 		sdcard_flag = 1;
 	}
 	
-	if (sdcard_flag == 0)
-	{
-		//SendString("TF Card Not Found!\n\r\\");
-		
-		screen_redraw = 1;
-		
-		while (1)
-		{	
-			USBHostTasks();
-			
-			if (screen_redraw > 0)
-			{
-				screen_redraw = 0;
-				
-				screen_clear();
-				audio_clear();
-
-				display_string(0x0000, 0x0000, "TF Card Not Detected\\");
-
-				screen_flip();
-
-				DelayMS(100);
-
-				display_string(0x0000, 0x0000, "TF Card Not Detected\\");
-
-				screen_flip();
-
-				DelayMS(100);
-			}
-			
-			if ((controller_status_1 & 0x08) == 0x08 ||
-				(controller_status_2 & 0x08) == 0x08 ||
-				(controller_status_3 & 0x08) == 0x08 ||
-				(controller_status_4 & 0x08) == 0x08)
-			{
-				screen_clear();
-				audio_clear();
-				
-				audio_enable = 1; // audio on by default
-				controller_enable = 1; // must be on to play games
-
-				if (((controller_status_1 & 0x01) == 0x01 && (controller_status_1 & 0x02) == 0x02) || 
-					((controller_status_2 & 0x01) == 0x01 && (controller_status_2 & 0x02) == 0x02) || 
-					((controller_status_3 & 0x01) == 0x01 && (controller_status_3 & 0x02) == 0x02) || 
-					((controller_status_4 & 0x01) == 0x01 && (controller_status_4 & 0x02) == 0x02))
-				{
-					cart_rom = (volatile unsigned char *)0x9D0F0000; // change cart_rom to pack-in-game
-				}
-
-				if ((controller_status_1 & 0x04) == 0x04 || 
-					(controller_status_2 & 0x04) == 0x04 || 
-					(controller_status_3 & 0x04) == 0x04 || 
-					(controller_status_4 & 0x04) == 0x04)
-				{
-					menu_function(); // go to menu immediately if holding select
-				}
-				
-				if ((controller_status_1 & 0x10) == 0x10 ||
-					(controller_status_2 & 0x10) == 0x10 ||
-					(controller_status_3 & 0x10) == 0x10 ||
-					(controller_status_4 & 0x10) == 0x10) // UP, GB override
-				{
-					game_loop(2);
-				}
-				else if (((controller_status_1 & 0x40) == 0x40 ||
-					(controller_status_2 & 0x40) == 0x40 ||
-					(controller_status_3 & 0x40) == 0x40 ||
-					(controller_status_4 & 0x40) == 0x40) &&
-					((controller_status_1 & 0x80) == 0x80 ||
-					(controller_status_2 & 0x80) == 0x80 ||
-					(controller_status_3 & 0x80) == 0x80 ||
-					(controller_status_4 & 0x80) == 0x80)) // both left and right, GBC with SQI
-				{
-					game_loop(6);
-				}
-				else if ((controller_status_1 & 0x40) == 0x40 ||
-					(controller_status_2 & 0x40) == 0x40 ||
-					(controller_status_3 & 0x40) == 0x40 ||
-					(controller_status_4 & 0x40) == 0x40) // LEFT, SMS override
-				{
-					game_loop(4);
-				}
-				else if ((controller_status_1 & 0x80) == 0x80 ||
-					(controller_status_2 & 0x80) == 0x80 ||
-					(controller_status_3 & 0x80) == 0x80 ||
-					(controller_status_4 & 0x80) == 0x80) // RIGHT, GG override
-				{
-					game_loop(5);
-				}
-				else
-				{	
-					game_loop(0); // check rom header to decide
-				}
-			}
-		}
-	}
-	
 	//SendString("TF Card Found!\n\r\\");
-	
-	// top option
-	list_name[0] = 'P';
-	list_name[1] = 'l';
-	list_name[2] = 'a';
-	list_name[3] = 'y';
-	list_name[4] = ' ';
-	list_name[5] = 'G';
-	list_name[6] = 'a';
-	list_name[7] = 'm';
-	list_name[8] = 'e';
-	list_name[9] = '!';
-	list_name[10] = ' ';
-	list_name[11] = ' ';
 	
 	// root directory
 	directory_name[0] = '/';
@@ -2470,10 +2398,10 @@ int main()
 	
 	while (1)
 	{
-		while ((controller_status_1 & 0x08) == 0x08 || 
-			(controller_status_2 & 0x08) == 0x08 ||
-			(controller_status_3 & 0x08) == 0x08 || 
-			(controller_status_4 & 0x08) == 0x08)
+		while ((controller_status_1 & 0x0F) != 0x00 || 
+			(controller_status_2 & 0x0F) != 0x00 ||
+			(controller_status_3 & 0x0F) != 0x00 || 
+			(controller_status_4 & 0x0F) != 0x00)
 		{
 			USBHostTasks();
 		}
@@ -2486,24 +2414,10 @@ int main()
 		
 		list_total = 1; // start at 1
 		
-		list_generate();
+		list_generate(sdcard_flag);
 
 		if (list_total == 1) // in case of a blank folder
 		{
-			// top option
-			list_name[0] = 'P';
-			list_name[1] = 'l';
-			list_name[2] = 'a';
-			list_name[3] = 'y';
-			list_name[4] = ' ';
-			list_name[5] = 'G';
-			list_name[6] = 'a';
-			list_name[7] = 'm';
-			list_name[8] = 'e';
-			list_name[9] = '!';
-			list_name[10] = ' ';
-			list_name[11] = ' ';
-			
 			// root directory
 			directory_name[0] = '/';
 			directory_name[1] = 0;
@@ -2520,7 +2434,7 @@ int main()
 			
 			directory_root = 1;
 			
-			list_generate();
+			list_generate(sdcard_flag);
 		}
 		
 		menu_pos = 0;
@@ -2531,10 +2445,10 @@ int main()
 
 		//list_picture(menu_pos);
 		
-		while (((controller_status_1 & 0x08) == 0x00 && 
-			(controller_status_2 & 0x08) == 0x00 &&
-			(controller_status_3 & 0x08) == 0x00 && 
-			(controller_status_4 & 0x08) == 0x00) ||
+		while (((controller_status_1 & 0x0F) == 0x00 && 
+			(controller_status_2 & 0x0F) == 0x00 &&
+			(controller_status_3 & 0x0F) == 0x00 && 
+			(controller_status_4 & 0x0F) == 0x00) ||
 			menu_wait > 0)
 		{			
 			USBHostTasks();
@@ -2617,27 +2531,24 @@ int main()
 		screen_clear();
 		audio_clear();
 
-		if (menu_pos == 0 && directory_root == 1) // play game!
+		if ((menu_pos == 0 || menu_pos == 1) && directory_root == 1) // play game!
 		{		
 			audio_enable = 1; // audio on by default
 			controller_enable = 1; // must be on to play games
 
-			if (((controller_status_1 & 0x01) == 0x01 && (controller_status_1 & 0x02) == 0x02) || 
-				((controller_status_2 & 0x01) == 0x01 && (controller_status_2 & 0x02) == 0x02) || 
-				((controller_status_3 & 0x01) == 0x01 && (controller_status_3 & 0x02) == 0x02) || 
-				((controller_status_4 & 0x01) == 0x01 && (controller_status_4 & 0x02) == 0x02))
+			if (menu_pos == 1)
 			{
 				cart_rom = (volatile unsigned char *)0x9D0F0000; // change cart_rom to pack-in-game
 			}
 			
 			menu_hold = 0;
 			
-			if ((controller_status_1 & 0x04) == 0x04 || 
-				(controller_status_2 & 0x04) == 0x04 || 
-				(controller_status_3 & 0x04) == 0x04 || 
-				(controller_status_4 & 0x04) == 0x04)
+			if ((controller_status_1 & 0x0C) != 0x00 || 
+				(controller_status_2 & 0x0C) != 0x00 || 
+				(controller_status_3 & 0x0C) != 0x00 || 
+				(controller_status_4 & 0x0C) != 0x00) // START or SELECT, start up menu
 			{
-				menu_function(); // go to menu immediately if holding select
+				menu_function();
 				
 				menu_hold = 1;
 			}
@@ -2685,21 +2596,7 @@ int main()
 			audio_clear();
 
 			screen_flip();
-			
-			// top option
-			list_name[0] = 'P';
-			list_name[1] = 'l';
-			list_name[2] = 'a';
-			list_name[3] = 'y';
-			list_name[4] = ' ';
-			list_name[5] = 'G';
-			list_name[6] = 'a';
-			list_name[7] = 'm';
-			list_name[8] = 'e';
-			list_name[9] = '!';
-			list_name[10] = ' ';
-			list_name[11] = ' ';
-			
+	
 			// root directory
 			directory_name[0] = '/';
 			directory_name[1] = 0;
@@ -2768,14 +2665,37 @@ int main()
 
 				DelayMS(500);
 				
-				if (((controller_status_1 & 0x40) == 0x40 ||
-					(controller_status_2 & 0x40) == 0x40 ||
-					(controller_status_3 & 0x40) == 0x40 ||
-					(controller_status_4 & 0x40) == 0x40) &&
-					((controller_status_1 & 0x80) == 0x80 ||
-					(controller_status_2 & 0x80) == 0x80 ||
-					(controller_status_3 & 0x80) == 0x80 ||
-					(controller_status_4 & 0x80) == 0x80)) // both left and right, GBC with SQI
+				// Global variables
+				FIL file; // File handle for the file we open
+				DIR dir; // Directory information for the current directory
+				FATFS fso; // File System Object for the file system we are reading from
+	
+				unsigned long size = 0;
+				unsigned int result;
+
+				//SendString("Initializing disk\n\r\\");
+
+				// Wait for the disk to initialise
+				while(disk_initialize(0));
+				// Mount the disk
+				f_mount(&fso, "", 0);
+				// Change dir to the root directory
+				f_chdir(directory_name);
+				// Open the directory
+				f_opendir(&dir, ".");
+
+				//SendString("Attempting to read\n\r\\");
+
+				result = f_open(&file, filename, FA_READ);
+				if (result == 0)
+				{	
+					size = f_size(&file);
+				}
+				
+				while (f_sync(&file) != 0) { }
+				while (f_close(&file) != 0) { }
+				
+				if (size > 0x00100000) // greater than 1 MB
 				{
 					sqi_initialize();
 					
