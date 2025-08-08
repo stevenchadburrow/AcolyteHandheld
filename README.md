@@ -69,7 +69,7 @@ Supports SMS / GG / SB games on same emulator, with game save files<br>
 
 <b>WAV Audio Player</b>
 
-Plays all tested .wav files at any sample rate, 1 or 2 channels, 8 or 16 bits.<br>
+Plays all tested .wav files at 1 or 2 channels, 8 or 16 bits, and any sample rate.<br>
 (use 'ffmpeg' or 'sox' to convert your favorite .mp3 files to .wav format)<br>
 
 <b>Links</b>
