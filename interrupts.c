@@ -877,6 +877,80 @@ volatile void __attribute__((vector(_TIMER_8_VECTOR), interrupt(ipl3srs))) t8_ha
 {		
 	IFS1bits.T8IF = 0;  // clear interrupt flag
 	
+	// only for playing wav files, uses ext_ram[]
+	if (audio_wav_playing > 0)
+	{	
+		if (audio_wav_chan == 1)
+		{
+			if (audio_wav_samp == 1)
+			{
+				// 6-bit signed audio add 0x0080, unsigned add 0x0000
+				PORTA = (unsigned short)((unsigned char)(((((unsigned short)ext_ram[audio_read] & 0x00F0) >> 2))) + 0xC000); // needs 0xC000 to not reset LCD
+				PORTB = (unsigned short)((unsigned char)((((unsigned short)ext_ram[audio_read] & 0x00FC))) + 0x0000); // doesn't matter
+				
+				audio_read++;
+				if (audio_read >= 0x8000) audio_read = 0;
+			}
+			else if (audio_wav_samp == 2)
+			{
+				audio_read++; // ignore first byte
+				if (audio_read >= 0x8000) audio_read = 0;
+				
+				// 6-bit signed audio add 0x0080, unsigned add 0x0000
+				PORTA = (unsigned short)((unsigned char)(((((unsigned short)ext_ram[audio_read] & 0x00F0) >> 2))) + 0xC020); // needs 0xC000 to not reset LCD
+				PORTB = (unsigned short)((unsigned char)((((unsigned short)ext_ram[audio_read] & 0x00FC))) + 0x0080); // doesn't matter
+				
+				audio_read++;
+				if (audio_read >= 0x8000) audio_read = 0;
+			}
+		}
+		else if (audio_wav_chan == 2)
+		{
+			if (audio_wav_samp == 2)
+			{
+				// 6-bit signed audio add 0x0080, unsigned add 0x0000
+				PORTA = (unsigned short)((unsigned char)(((((unsigned short)ext_ram[audio_read] & 0x00F0) >> 2))) + 0xC000); // needs 0xC000 to not reset LCD
+				
+				audio_read++;
+				if (audio_read >= 0x8000) audio_read = 0;
+				
+				PORTB = (unsigned short)((unsigned char)((((unsigned short)ext_ram[audio_read] & 0x00FC))) + 0x0000); // doesn't matter
+				
+				audio_read++;
+				if (audio_read >= 0x8000) audio_read = 0;
+			}
+			else if (audio_wav_samp == 4)
+			{
+				audio_read++; // ignore first byte
+				if (audio_read >= 0x8000) audio_read = 0;
+				
+				// 6-bit signed audio add 0x0080, unsigned add 0x0000
+				PORTA = (unsigned short)((unsigned char)(((((unsigned short)ext_ram[audio_read] & 0x00F0) >> 2))) + 0xC020); // needs 0xC000 to not reset LCD
+				
+				audio_read++;
+				if (audio_read >= 0x8000) audio_read = 0;
+				
+				audio_read++; // ignore first byte
+				if (audio_read >= 0x8000) audio_read = 0;
+				
+				PORTB = (unsigned short)((unsigned char)((((unsigned short)ext_ram[audio_read] & 0x00FC))) + 0x0080); // doesn't matter
+				
+				audio_read++;
+				if (audio_read >= 0x8000) audio_read = 0;
+			}
+		}
+		
+		if (audio_wav_end > 0)
+		{
+			if (audio_read >= audio_wav_end)
+			{
+				audio_wav_playing = 0;
+			}
+		}
+		
+		return;
+	}
+	
 	if (audio_enable > 0 && (screen_speed_mode == 0 || screen_speed_dir == 1))
 	{
 		if (audio_bank == 0)

@@ -239,16 +239,16 @@ void __attribute__((optimize("O0"))) Setup()
 	T9CON = 0x0070; // prescale of 1:256, 16-bit
 	TMR9 = 0x0000; // zero out counter
 	PR9 = 0x2625;  // one whole frame (minus one)
+	
+	IPC9bits.T8IP = 0x3; // interrupt priority 3
+	IPC9bits.T8IS = 0x0; // interrupt sub-priority 0
+	IFS1bits.T8IF = 0; // T8 clear flag
+	IEC1bits.T8IE = 1; // T8 interrupt on	
 
 	IPC10bits.T9IP = 0x2; // interrupt priority 2
 	IPC10bits.T9IS = 0x0; // interrupt sub-priority 0
 	IFS1bits.T9IF = 0; // T9 clear flag
 	IEC1bits.T9IE = 1; // T9 interrupt on
-
-	IPC9bits.T8IP = 0x3; // interrupt priority 3
-	IPC9bits.T8IS = 0x0; // interrupt sub-priority 0
-	IFS1bits.T8IF = 0; // T8 clear flag
-	IEC1bits.T8IE = 1; // T8 interrupt on	
 	
 	T8CONbits.ON = 1; // turn on TMR8 for audio
 	T9CONbits.ON = 1; // turn on TMR9 for nes timing

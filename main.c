@@ -528,7 +528,7 @@ void debug_report()
 volatile unsigned char *cart_rom = (volatile unsigned char *)0x9D100000;
 volatile unsigned char sys_ram[8192]; // used for NES and SMS
 volatile unsigned char cart_ram[32768]; // used for NES, GB, and SMS
-volatile unsigned char ext_ram[32768]; // used for NES, GB, and SMS
+volatile unsigned char ext_ram[32768]; // used for NES, GB, and SMS (and WAV music)
 
 volatile unsigned long interrupt_count = 0; // used for frame timing
 
@@ -588,6 +588,11 @@ volatile unsigned int audio_write = 0;
 volatile unsigned int audio_enable = 0;
 volatile unsigned char audio_volume = 4; // 0 = lowest, 4 = highest
 volatile unsigned char audio_bank = 0;
+
+volatile unsigned char audio_wav_playing = 0;
+volatile unsigned long audio_wav_end = 0;
+volatile unsigned char audio_wav_chan = 1;
+volatile unsigned char audio_wav_samp = 1;
 
 // controllers
 volatile unsigned char controller_status_1 = 0x00;
@@ -984,13 +989,11 @@ const unsigned char usb_conversion[256] =
 	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
 };
 
-
-
 #include "lcd.c"
 
 #include "usbhost.c"
-
 #include "interrupts.c"
+
 #include "sdcard.c" 
 
 #include "ffconf.h"
@@ -1001,6 +1004,161 @@ const unsigned char usb_conversion[256] =
 
 #include "nvm.c"
 #include "sqi.c"
+
+
+
+void __attribute__((optimize("O0"))) wav_run(char *directory, char *filename)
+{
+	audio_enable = 0; // turn off usual audio
+	
+	audio_wav_playing = 1; // turn on wav audio
+	
+	audio_wav_chan = 1; // default to 1 channel
+	audio_wav_samp = 1; // default to 8 bits
+	
+	audio_read = 0;
+	audio_write = 0;
+	
+	FIL file;
+	DIR dir;
+	FATFS fso;
+	
+	unsigned char buffer[4][1];
+	unsigned int bytes;
+	unsigned int result;
+	unsigned char flag;
+	unsigned long len;
+	
+	unsigned long rate = 44100; // default playback rate
+	
+	unsigned char array[4];
+	unsigned char seek = 1;
+	
+	array[0] = 0;
+	array[1] = 0;
+	array[2] = 0;
+	array[3] = 0;
+	
+	// Wait for the disk to initialise
+	while(disk_initialize(0));
+	// Mount the disk
+	f_mount(&fso, "", 0);
+	// Change dir to the root directory
+	f_chdir(directory);
+	// Open the directory
+	f_opendir(&dir, ".");
+
+	result = f_open(&file, filename, FA_READ);
+	if (result == 0)
+	{	
+		while (seek > 0)
+		{
+			array[0] = array[1];
+			array[1] = array[2];
+			array[2] = array[3];
+			
+			while (f_read(&file, &buffer[0], 1, &bytes) != 0) { } // MUST READ ONE BYTE AT A TIME!!!
+			
+			array[3] = buffer[0][0];
+			
+			if (array[0] == 0x66 &&
+				array[1] == 0x6D &&
+				array[2] == 0x74 &&
+				array[3] == 0x20) // fmt
+			{
+				// always 0x100000000100
+				for (int i=0; i<6; i++)
+				{
+					while (f_read(&file, &buffer[0], 1, &bytes) != 0) { } // MUST READ ONE BYTE AT A TIME!!!
+				}
+				
+				// channels
+				while (f_read(&file, &buffer[0], 1, &bytes) != 0) { } // MUST READ ONE BYTE AT A TIME!!!
+				while (f_read(&file, &buffer[1], 1, &bytes) != 0) { } // MUST READ ONE BYTE AT A TIME!!!
+				
+				audio_wav_chan = buffer[0][0];
+				
+				// sample rate
+				while (f_read(&file, &buffer[0], 1, &bytes) != 0) { } // MUST READ ONE BYTE AT A TIME!!!
+				while (f_read(&file, &buffer[1], 1, &bytes) != 0) { } // MUST READ ONE BYTE AT A TIME!!!
+				while (f_read(&file, &buffer[2], 1, &bytes) != 0) { } // MUST READ ONE BYTE AT A TIME!!!
+				while (f_read(&file, &buffer[3], 1, &bytes) != 0) { } // MUST READ ONE BYTE AT A TIME!!!
+				
+				rate = (unsigned long)buffer[0][0] + 0x00000100 * (unsigned long)buffer[1][0] + 
+					0x00010000 * (unsigned long)buffer[2][0] + 0x01000000 * (unsigned long)buffer[3][0] + 0x0010;
+				
+				// bytes per second
+				while (f_read(&file, &buffer[0], 1, &bytes) != 0) { } // MUST READ ONE BYTE AT A TIME!!!
+				while (f_read(&file, &buffer[1], 1, &bytes) != 0) { } // MUST READ ONE BYTE AT A TIME!!!
+				while (f_read(&file, &buffer[2], 1, &bytes) != 0) { } // MUST READ ONE BYTE AT A TIME!!!
+				while (f_read(&file, &buffer[3], 1, &bytes) != 0) { } // MUST READ ONE BYTE AT A TIME!!!
+				
+				// bytes per sample
+				while (f_read(&file, &buffer[0], 1, &bytes) != 0) { } // MUST READ ONE BYTE AT A TIME!!!
+				while (f_read(&file, &buffer[1], 1, &bytes) != 0) { } // MUST READ ONE BYTE AT A TIME!!!
+				
+				audio_wav_samp = buffer[0][0];
+				
+				// don't read last part to buffer for array[]???
+			}
+			
+			if (array[0] == 0x64 &&
+				array[1] == 0x61 &&
+				array[2] == 0x74 &&
+				array[3] == 0x61) // data
+			{
+				// length of data
+				while (f_read(&file, &buffer[0], 1, &bytes) != 0) { } // MUST READ ONE BYTE AT A TIME!!!
+				while (f_read(&file, &buffer[1], 1, &bytes) != 0) { } // MUST READ ONE BYTE AT A TIME!!!
+				while (f_read(&file, &buffer[2], 1, &bytes) != 0) { } // MUST READ ONE BYTE AT A TIME!!!
+				while (f_read(&file, &buffer[3], 1, &bytes) != 0) { } // MUST READ ONE BYTE AT A TIME!!!
+				
+				len = (unsigned long)buffer[0][0] + 0x00000100 * (unsigned long)buffer[1][0] + 
+					0x00010000 * (unsigned long)buffer[2][0] + 0x01000000 * (unsigned long)buffer[3][0] + 0x0010;
+				
+				seek = 0;
+			}
+		}
+		
+		T8CON = 0x0000; // reset
+		T8CON = 0x0000; // prescale of 1:1, 16-bit
+		TMR8 = 0x0000; // zero out counter
+		PR8 = (unsigned short)(((300000000 / rate) / 2) - 1); //0x0D47; // adjust to sample rate, 0x0D48 = 44.1kHz  
+		
+		T8CONbits.ON = 1; // timer on
+		
+		while (len > 0x0010)
+		{	
+			if ((audio_read < 0x4000 && audio_write >= 0x4000) ||
+				(audio_read >= 0x4000 && audio_write < 0x4000))
+			{
+				while (f_read(&file, &buffer[0], 1, &bytes) != 0) { } // MUST READ ONE BYTE AT A TIME!!!
+				
+				ext_ram[audio_write] = buffer[0][0];
+
+				audio_write++;
+
+				if (audio_write >= 0x8000) audio_write = 0x0000;
+				
+				len -= 1; // one byte at a time
+			}
+		}
+		
+		audio_wav_end = audio_write;
+		
+		if (audio_wav_end == 0) audio_wav_end = 1;
+		
+		while (audio_wav_playing > 0) { } // wait for the end
+		
+		while (f_sync(&file) != 0) { }
+		while (f_close(&file) != 0) { }
+	}
+};
+
+
+
+
+
 
 void screen_flip()
 {
@@ -1139,7 +1297,7 @@ void audio_clear()
 #include "setup.c" 
 
 // comment out for quicker reprogramming
-#include "game.c" 
+//#include "game.c"
 
 
 
@@ -1276,6 +1434,16 @@ void list_generate(unsigned int flag)
 				if (list_name[list_total*12+i] == '.' &&
 					list_name[list_total*12+i+1] == 'S' &&
 					list_name[list_total*12+i+2] == 'G') // SG games
+				{
+					result = 1;
+							
+					break;
+				}
+				
+				if (list_name[list_total*12+i] == '.' &&
+					list_name[list_total*12+i+1] == 'W' &&
+					list_name[list_total*12+i+2] == 'A' &&
+					list_name[list_total*12+i+3] == 'V') // WAV music
 				{
 					result = 1;
 							
@@ -2115,10 +2283,11 @@ volatile void __attribute__((vector(_CHANGE_NOTICE_K_VECTOR),interrupt(ipl1srs),
 	{
 		screen_clear();
 		audio_clear();
-
+		
 		// if in main menu, just switch screens with this button
 		if (screen_menu > 0)
 		{
+			/*
 			screen_handheld = 1 - screen_handheld;
 
 			screen_clear();
@@ -2130,10 +2299,10 @@ volatile void __attribute__((vector(_CHANGE_NOTICE_K_VECTOR),interrupt(ipl1srs),
 			screen_redraw = 1;
 
 			DelayMS(1000);
-
+			*/
 			return;
 		}
-		
+	
 		menu_function();
 		
 		if (cart_rom[0] == 0x4E && // N
@@ -2285,7 +2454,6 @@ void game_loop(unsigned char override)
 // probably bad optimizations are: inline-small-functions,caller-saves,strict-aliasing
 // undecided optimizations: align-functions,align-loops,align_labels
 // good optimizations: expensive-optimizations,peephole,unroll-loops
-
 
 int main()
 {	
@@ -2530,6 +2698,12 @@ int main()
 
 		screen_clear();
 		audio_clear();
+		
+		DelayMS(100);
+		DelayMS(100);
+		DelayMS(100);
+		DelayMS(100);
+		DelayMS(100);
 
 		if ((menu_pos == 0 || menu_pos == 1) && directory_root == 1) // play game!
 		{		
@@ -2543,10 +2717,7 @@ int main()
 			
 			menu_hold = 0;
 			
-			if ((controller_status_1 & 0x0C) != 0x00 || 
-				(controller_status_2 & 0x0C) != 0x00 || 
-				(controller_status_3 & 0x0C) != 0x00 || 
-				(controller_status_4 & 0x0C) != 0x00) // START or SELECT, start up menu
+			if (PORTKbits.RK7 == 0) // holding menu button
 			{
 				menu_function();
 				
@@ -2567,8 +2738,8 @@ int main()
 				((controller_status_1 & 0x40) == 0x40 ||
 				(controller_status_2 & 0x40) == 0x40 ||
 				(controller_status_3 & 0x40) == 0x40 ||
-				(controller_status_4 & 0x40) == 0x40)) // both left and right, GBC with SQI
-			{
+				(controller_status_4 & 0x40) == 0x40)) // both LEFT and RIGHT, GBC with SQI
+			{				
 				game_loop(6);
 			}
 			else if ((controller_status_1 & 0x40) == 0x40 ||
@@ -2665,44 +2836,25 @@ int main()
 
 				DelayMS(500);
 				
-				// Global variables
-				FIL file; // File handle for the file we open
-				DIR dir; // Directory information for the current directory
-				FATFS fso; // File System Object for the file system we are reading from
-	
-				unsigned long size = 0;
-				unsigned int result;
-
-				//SendString("Initializing disk\n\r\\");
-
-				// Wait for the disk to initialise
-				while(disk_initialize(0));
-				// Mount the disk
-				f_mount(&fso, "", 0);
-				// Change dir to the root directory
-				f_chdir(directory_name);
-				// Open the directory
-				f_opendir(&dir, ".");
-
-				//SendString("Attempting to read\n\r\\");
-
-				result = f_open(&file, filename, FA_READ);
-				if (result == 0)
-				{	
-					size = f_size(&file);
+				int wav_flag = 0;
+				
+				for (int i=0; i<12; i++)
+				{
+					if (filename[i] == '.' &&
+						filename[i+1] == 'W' &&
+						filename[i+2] == 'A' &&
+						filename[i+3] == 'V') // WAV music
+					{
+						wav_flag = 1;
+					}
 				}
 				
-				while (f_sync(&file) != 0) { }
-				while (f_close(&file) != 0) { }
-				
-				if (size > 0x00100000) // greater than 1 MB
+				if (wav_flag > 0)
 				{
-					sqi_initialize();
-					
-					sqi_write(directory_name, filename);
+					wav_run(directory_name, filename);
 					
 					DelayMS(1000);
-	
+
 					// soft reset system
 					SYSKEY = 0x0; // reset
 					SYSKEY = 0xAA996655; // unlock key #1
@@ -2714,7 +2866,57 @@ int main()
 				}
 				else
 				{
-					nes_burn(directory_name, filename);
+					// Global variables
+					FIL file; // File handle for the file we open
+					DIR dir; // Directory information for the current directory
+					FATFS fso; // File System Object for the file system we are reading from
+
+					unsigned long size = 0;
+					unsigned int result;
+
+					//SendString("Initializing disk\n\r\\");
+
+					// Wait for the disk to initialise
+					while(disk_initialize(0));
+					// Mount the disk
+					f_mount(&fso, "", 0);
+					// Change dir to the root directory
+					f_chdir(directory_name);
+					// Open the directory
+					f_opendir(&dir, ".");
+
+					//SendString("Attempting to read\n\r\\");
+
+					result = f_open(&file, filename, FA_READ);
+					if (result == 0)
+					{	
+						size = f_size(&file);
+					}
+
+					while (f_sync(&file) != 0) { }
+					while (f_close(&file) != 0) { }
+
+					if (size > 0x00100000) // greater than 1 MB
+					{
+						sqi_initialize();
+
+						sqi_write(directory_name, filename);
+
+						DelayMS(1000);
+
+						// soft reset system
+						SYSKEY = 0x0; // reset
+						SYSKEY = 0xAA996655; // unlock key #1
+						SYSKEY = 0x556699AA; // unlock key #2
+						RSWRST = 1; // set bit to reset of system
+						SYSKEY = 0x0; // re-lock
+						RSWRST; // read from register to reset
+						while (1) { } // wait until reset occurs
+					}
+					else
+					{
+						nes_burn(directory_name, filename);
+					}
 				}
 			}
 		}
