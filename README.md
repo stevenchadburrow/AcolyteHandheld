@@ -11,6 +11,7 @@ The Acolyte Handheld is a portable PIC32MZ based game console.  It is programmed
   <li>The built-in NES emulator has been tested with over 120+ games at this point, including but not limited to the list <a href="https://github.com/stevenchadburrow/AcolyteHandPICd32/tree/main/NES">here</a>.  As a benchmark, Super Mario Bros 3 currently runs full speed at 30 FPS.  My demo video of Super Mario Bros 3 can be found <a href="https://www.youtube.com/watch?v=WGrEMQLWrP4">here</a>.</li>
   <li>The imported GB/GBC emulator is very accurate and runs games at full speed.</li>
   <li>The imported SMS/GG/SG emulator is very accurate and runs games at full speed.</li>
+  <li>Built-in WAV audio player.</li>
   <li>Custom built 3D printed enclosure and buttons.</li>
 </ul>
 
@@ -65,6 +66,11 @@ Supports 1.5x scaling, DMG/GBC palettes, and game save files<br>
 
 ITotalJustice's <a href="https://github.com/ITotalJustice/TotalSMS">TotalSMS Emulator</a><br>
 Supports SMS / GG / SB games on same emulator, with game save files<br>
+
+<b>WAV Audio Player</b>
+
+Plays all tested .wav files at any sample rate, 1 or 2 channels, 8 or 16 bits.<br>
+(use 'ffmpeg' or 'sox' to convert your favorite .mp3 files to .wav format)<br>
 
 <b>Links</b>
 
