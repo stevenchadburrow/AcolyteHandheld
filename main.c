@@ -1297,7 +1297,7 @@ void audio_clear()
 #include "setup.c" 
 
 // comment out for quicker reprogramming
-//#include "game.c"
+#include "game.c"
 
 
 
