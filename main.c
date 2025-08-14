@@ -417,7 +417,7 @@ void SendHex(unsigned char value)
 	while (U2STAbits.UTXBF == 1) { }
 	if (temp/16 >= 10) U2TXREG = (char)(temp/16 + 'A' - 10);
 	else U2TXREG = (char)(temp/16 + '0');
-	while (U3STAbits.UTXBF == 1) { }
+	while (U2STAbits.UTXBF == 1) { }
 	if (temp%16 >= 10) U2TXREG = (char)(temp%16 + 'A' - 10);
 	else U2TXREG = (char)(temp%16 + '0');
 }
