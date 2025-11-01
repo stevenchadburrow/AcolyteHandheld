@@ -31,8 +31,6 @@ volatile uint16_t selected_palette_lcd[3][7];
 unsigned char reset_check = 0;
 unsigned char palette_num = 0;
 
-unsigned char rom_in_sqi = 0; // change to read from sqi instead
-
 // Returns a byte from the ROM file at the given address.
 uint8_t gb_rom_read(struct gb_s *gb, const uint_fast32_t addr)
 {
@@ -40,18 +38,15 @@ uint8_t gb_rom_read(struct gb_s *gb, const uint_fast32_t addr)
 	{
 		return ext_ram[addr];
 	}
-	else
+	else if (addr < 0x00100000) // first 1MB in ROM
 	{
-		if (rom_in_sqi > 0)
-		{
-			sqi_prepare(addr);
+		return cart_rom[addr];
+	}
+	else // otherwise, check SQI
+	{
+		sqi_prepare(addr);
 			
-			return sqi_read();
-		}
-		else
-		{
-			return cart_rom[addr];
-		}
+		return sqi_read();
 	}
 }
 
@@ -719,27 +714,11 @@ int PeanutGB(unsigned char core)
 	screen_clear();
 	audio_clear();
 	
-	if (core < 2)
+	sqi_initialize();
+	
+	for (unsigned long i=0; i<0x4000; i++)
 	{
-		rom_in_sqi = 0;
-		
-		for (unsigned long i=0; i<0x4000; i++)
-		{
-			ext_ram[i] = cart_rom[i];
-		}
-	}
-	else
-	{
-		rom_in_sqi = 1;
-		
-		sqi_initialize();
-
-		for (unsigned long i=0; i<0x4000; i++)
-		{
-			sqi_prepare(i);
-			
-			ext_ram[i] = sqi_read();
-		}
+		ext_ram[i] = cart_rom[i];
 	}
 	
 	struct gb_s gb;
@@ -754,7 +733,7 @@ int PeanutGB(unsigned char core)
 	gb_ret = gb_init(&gb, &gb_rom_read, &gb_cart_ram_read, &gb_cart_ram_write,
 			 &gb_error, &priv);
 	
-	if (core == 0 || core == 2) gb.cgb.cgbMode = 0; // run as DMG Gameboy
+	if (core == 0) gb.cgb.cgbMode = 0; // run as DMG Gameboy
 
 	switch(gb_ret)
 	{

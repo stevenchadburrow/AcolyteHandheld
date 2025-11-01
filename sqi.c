@@ -212,7 +212,7 @@ unsigned char sqi_write(const char *directory, const char *filename)
 	result = f_open(&file, filename, FA_READ);
 	if (result == 0)
 	{
-		for (addr=0; addr<0x00400000; addr+=4096) // up to 4MB
+		for (addr=0x00000000; addr<0x00400000; addr+=4096) // up to 4MB
 		{	
 			//SendLongHex(addr);
 			//SendChar('.');

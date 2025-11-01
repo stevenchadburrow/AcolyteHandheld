@@ -1726,7 +1726,7 @@ void menu_display()
 	else if ((cart_rom[0x0104] == 0xCE &&
 		cart_rom[0x0105] == 0xED &&
 		cart_rom[0x0106] == 0x66 &&
-		cart_rom[0x0107] == 0x66) || rom_in_sqi == 1) // GB/GBC
+		cart_rom[0x0107] == 0x66)) // GB/GBC
 	{
 		display_string(0x0000, 0x0000, " Return to Game\\");
 
@@ -2078,7 +2078,7 @@ void menu_function()
 		else if ((cart_rom[0x0104] == 0xCE &&
 			cart_rom[0x0105] == 0xED &&
 			cart_rom[0x0106] == 0x66 &&
-			cart_rom[0x0107] == 0x66) || rom_in_sqi == 1) // GB/GBC 
+			cart_rom[0x0107] == 0x66)) // GB/GBC 
 		{
 			if (menu_pos == 0)
 			{
@@ -2339,7 +2339,7 @@ void game_loop(unsigned char override)
 		PR8 = 0x1299; // approx twice per scanline (minus one)
 		T8CONbits.ON = 1;
 		
-		PeanutGB(3); // Gameboy Color using SQI
+		PeanutGB(1); // Gameboy Color
 	}
 	
 	if ((cart_rom[0] == 0x4E && // N
@@ -2900,18 +2900,11 @@ int main()
 					{
 						sqi_initialize();
 
+						// up to 4MB into SQI
 						sqi_write(directory_name, filename);
-
-						DelayMS(1000);
-
-						// soft reset system
-						SYSKEY = 0x0; // reset
-						SYSKEY = 0xAA996655; // unlock key #1
-						SYSKEY = 0x556699AA; // unlock key #2
-						RSWRST = 1; // set bit to reset of system
-						SYSKEY = 0x0; // re-lock
-						RSWRST; // read from register to reset
-						while (1) { } // wait until reset occurs
+						
+						// puts the first 1MB into ROM
+						nes_burn(directory_name, filename);
 					}
 					else
 					{
