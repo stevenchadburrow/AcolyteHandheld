@@ -1,6 +1,6 @@
 # Acolyte Handheld
 
-The Acolyte Handheld is a portable PIC32MZ based game console, an upgrade from <a href="https://github.com/stevenchadburrow/AcolyteHandPICd32">my previous project</a>.  It is programmed with my own homebrew <a href="https://github.com/stevenchadburrow/PICnes">PICnes Emulator</a>, as well as the <a href="https://github.com/deltabeard/Peanut-GB">Peanut-GB Emulator</a> and the <a href="https://github.com/ITotalJustice/TotalSMS">TotalSMS Emulator</a>.  Most of the code is derived from my previous project <a href="https://github.com/stevenchadburrow/AcolyteHandPICd32">here</a>.<br>
+The Acolyte Handheld is a portable PIC32MZ based game console, an revision from <a href="https://github.com/stevenchadburrow/AcolyteHandPICd32">my previous project</a>.  It is programmed with my own homebrew <a href="https://github.com/stevenchadburrow/PICnes">PICnes Emulator</a>, as well as the <a href="https://github.com/deltabeard/Peanut-GB">Peanut-GB Emulator</a> and the <a href="https://github.com/ITotalJustice/TotalSMS">TotalSMS Emulator</a>.  Most of the code is derived from my previous project <a href="https://github.com/stevenchadburrow/AcolyteHandPICd32">here</a>.<br>
 
 <b>Features</b>
 
